@@ -1,0 +1,19 @@
+<script>
+      
+gsap.registerPlugin(ScrollTrigger);
+
+let today = gsap.timeline({
+   scrollTrigger: {
+    trigger: ".today-wrapper",
+    scrub: 1.2,
+    pin: true,
+    start: "top top",
+    end: "+=200%", // Сохраняем фиксированное значение
+    pinSpacing: true // для сохранения расстояния между блоками, но нужно будет поднять след блок (можно посмотреть в "BZDS для пробы" блоки "БЗДС сегодня" и "Наша продукция") 
+  }
+})
+today.to(".first", {y: "-100vh", duration: 1130, ease: "none"})
+.to(".second", {y: "-170vh", duration: 1288, ease: "none"}, "<")
+.to(".today-2items", {y: "-80vh", duration: 1332, stagger:0, ease: "none"}, "<");
+
+</script>
