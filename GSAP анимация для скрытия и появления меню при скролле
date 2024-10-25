@@ -1,0 +1,63 @@
+<!-- анимация меню  --> работает как нужно
+ 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<script>
+
+// Создаем анимацию для скрытия элемента
+    gsap.to(".menu-page", {
+        y: -100, // Сдвиг вверх
+        opacity: 0,
+        scrollTrigger: {
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                if (self.direction === 1) { // Скролл вниз
+                    gsap.to(".menu-page", { y: -100, opacity: 0, duration: 0.5 });
+                } else { // Скролл вверх
+                    gsap.to(".menu-page", { y: 0, opacity: 1, duration: 0.5 });
+                }
+            }
+        }
+    });
+</script>
+
+
+
+<!-- анимация меню  --> пока работает только в начале стр 
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<script>
+function animateMenu() {
+  const menu = document.querySelector(".menu-page");
+
+  if (!menu) return;
+
+  gsap.to(menu, {
+    scrollTrigger: {
+      trigger: "body",
+      start: "top top",
+      end: "+=15%",
+      scrub: true,
+      markers: false,
+      toggleActions: "play none reverse reset",
+      pinReparent: true,
+      onToggle: self => {
+        if (self.isActive) {
+          console.log("Меню активно");
+        }
+      }
+    },
+    y: () => -(menu.getBoundingClientRect().height * 0.8), // Скрывает меню полностью в независимоти от высоты
+    opacity: 0,
+    ease: "power2.inOut",
+    duration: 0.5
+  });
+}
+
+document.addEventListener('DOMContentLoaded', animateMenu);
+</script>
