@@ -1,0 +1,47 @@
+<!-- для глаз -->
+<script>
+document.addEventListener('mousemove', function(event) {
+  const eyeContainers = document.querySelectorAll('.eye-container');
+
+  eyeContainers.forEach(container => {
+    const eye = container.querySelector('.eye');
+    const pupil = container.querySelector('.pupil');
+    const reflection = container.querySelector('.reflection');
+    const eyebrow = container.querySelector('.eyebrow');
+
+    // Добавляем плавные переходы для элементов через JS
+    pupil.style.transition = 'transform 0.3s ease-out'; // Скорость перемещения зрачка
+    reflection.style.transition = 'transform 0.3s ease-out'; // Скорость перемещения блика
+    eyebrow.style.transition = 'transform 0.3s ease-out'; // Скорость перемещения брови
+
+    const eyeRect = eye.getBoundingClientRect(); // Получаем позицию глаза относительно окна
+    const pupilRect = pupil.getBoundingClientRect();
+    const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+    const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+    
+    // Рассчитываем угол к курсору
+    const angle = Math.atan2(event.clientY - eyeCenterY, event.clientX - eyeCenterX);
+
+    // Ограничение для зрачка
+    const maxDistance = Math.min(eyeRect.width / 4, eyeRect.height / 4);
+    const pupilX = eyeCenterX + maxDistance * Math.cos(angle);
+    const pupilY = eyeCenterY + maxDistance * Math.sin(angle);
+
+    // Перемещаем зрачок
+    pupil.style.transform = `translate(${pupilX - eyeCenterX}px, ${pupilY - eyeCenterY}px)`;
+
+    // Ограничение для белого блика (он остается внутри зрачка)
+    const reflectionMaxDistance = Math.min(pupilRect.width / 6, pupilRect.height / 6);
+    const reflectionX = pupilX + reflectionMaxDistance * Math.cos(angle);
+    const reflectionY = pupilY + reflectionMaxDistance * Math.sin(angle);
+
+    // Перемещаем reflection относительно центра pupil
+    reflection.style.transform = `translate(${reflectionMaxDistance * Math.cos(angle)}px, ${reflectionMaxDistance * Math.sin(angle)}px)`;
+
+    // Брови двигаем чуть в противоположную сторону
+    const eyebrowX = eyeCenterX - 15 * Math.cos(angle);
+    const eyebrowY = eyeCenterY - 5 * Math.sin(angle);
+    eyebrow.style.transform = `translate(${eyebrowX - eyeCenterX}px, ${eyebrowY - eyeCenterY}px)`;
+  });
+});
+</script>
