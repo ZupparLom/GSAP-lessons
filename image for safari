@@ -1,0 +1,67 @@
+Custom код с проверкой на присутствие safari
+<script type="text/javascript">
+  function isSafari() {
+    const uAgent = navigator.userAgent;
+    return /Safari/.test(uAgent) && !/Chrome/.test(uAgent) && !/Chromium/.test(uAgent);
+  };
+  // Определяем переменную --vh равную  vh в хроме
+  function adjustVH() {
+    const vh = window.innerHeight * 0.01; // Получаем 1% от высоты окна
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+  
+  if (isSafari()) {
+    // Здесь должен быть код который пересчитывает высоту картинок только в Safari
+    window.addEventListener('resize', adjustVH);
+    window.addEventListener('load', adjustVH);  
+  };
+</script>
+
+Также стили добавленные в custom код с классом выбранной картинки 
+<style>
+  .image--u-iu8yc7pjq {
+  height: calc(var(--vh, 1vh) * 92.5) !important;
+  width: calc(var(--vh, 1vh) * 92.5 * 420.85 / 583.672) !important;
+}
+</style>
+
+с заданой высотой 92.5 vh
+<style>
+  .img-pc-h {
+  height: calc(var(--vh, 1vh) * 92.5) !important;
+  width: calc(var(--vh, 1vh) * 92.5 * 420.85 / 583.672) !important;
+}
+</style>
+
+У каждой картинки есть соотношение сторон (его можно посмотреть в хроме)
+Далее рассчитываем высоту  height: calc(var(--vh, 1vh) * <высота в vh>) !important;
+width: calc(var(--vh, 1vh) * <высота в vh> * <соотношение сторон>) !important;
+У квадрата соотношение сторон - 1
+
+Ограничения на разрешения
+@media screen and (min-width: 768px) and (max-width: 991px) { 
+здесь фукция { 
+}
+
+Пример
+
+<style>
+@media screen and (min-width: 992px) { .image--u-iu8yc7pjq {
+  height: calc(var(--vh, 1vh) * 92.5) !important;
+  width: calc(var(--vh, 1vh) * 92.5 * 420.85 / 583.672) !important;
+ }
+}
+
+@media screen and (min-width: 768px) and (max-width: 991px) { .image--u-iu8yc7pjq {
+  height: calc(var(--vh, 1vh) * 67.5) !important;
+  width: calc(var(--vh, 1vh) * 67.5 * 463.33 / 642.59) !important;
+ }
+}
+
+@media screen and (min-width: 320px) and (max-width: 479px) { .image--u-iu8yc7pjq {
+  height: calc(var(--vh, 1vh) * 55.5) !important;
+  width: calc(var(--vh, 1vh) * 55.5 * 355.81 / 528.36) !important;
+ }
+}
+
+</style>
