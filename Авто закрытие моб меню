@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
   const menuItemsLevelOne = document.querySelectorAll('.menu__item-lvl1');
   const burgerButton = modal.querySelector('.menu__burger-button');
   const contactButton = document.querySelector('.menu-button'); 
-  const isBurgerButtonVisible = window.getComputedStyle(burgerButton).getPropertyValue('display') === 'block';
+  const isBurgerButtonVisible = window.getComputedStyle(burgerButton).getPropertyValue('display') === 'flex';
 
   // Функция для закрытия меню
   function closeMenu() {
@@ -24,3 +24,5 @@ document.addEventListener("DOMContentLoaded", function(event) {
   // Закрытие меню при клике на кнопку
 });
 </script>
+
+
