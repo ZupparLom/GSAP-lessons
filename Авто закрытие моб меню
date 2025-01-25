@@ -1,0 +1,26 @@
+<script>
+document.addEventListener("DOMContentLoaded", function(event) {
+  const modal = document.querySelector('.menu1'); // menu1 - название класса в меню
+  const menuItemsLevelOne = document.querySelectorAll('.menu__item-lvl1');
+  const burgerButton = modal.querySelector('.menu__burger-button');
+  const contactButton = document.querySelector('.menu-button'); 
+  const isBurgerButtonVisible = window.getComputedStyle(burgerButton).getPropertyValue('display') === 'block';
+
+  // Функция для закрытия меню
+  function closeMenu() {
+    modal.querySelector('.menu__fixed-wrapper').style.display = 'none';
+    modal.querySelector('.menu__overlay').style.display = 'none';
+  }
+
+  // Закрытие меню при клике на пункт меню
+  menuItemsLevelOne.forEach((item) => {
+    item.addEventListener('click', (event) => {
+      if (isBurgerButtonVisible) {
+        closeMenu();
+      }
+    });
+  });
+
+  // Закрытие меню при клике на кнопку
+});
+</script>
