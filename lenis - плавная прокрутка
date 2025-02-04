@@ -40,3 +40,54 @@ function raf(time) {
 
 requestAnimationFrame(raf)
 </script> 
+
+
+<!-- Подключение библиотеки Lenis -->
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+  // Инициализация Lenis после загрузки DOM
+  document.addEventListener("DOMContentLoaded", function () {
+    const lenis = new Lenis({
+      lerp: 0.05,          // Плавность анимации (чем меньше, тем плавнее)
+      infinite: false,     // Запрещаем бесконечный скролл
+      smoothWheel: true,   // Включаем плавный скролл при использовании колесика мыши
+    });
+
+    // Обрабатываем плавный скролл, исключая элементы с data-lenis-prevent
+    document.querySelectorAll('.t-popup').forEach(function (popup) {
+      popup.setAttribute('data-lenis-prevent', true);
+    });
+
+    // Функция анимации, вызываемая при каждом кадре
+    function raf(time) {
+      lenis.raf(time);         // Сообщаем Lenis текущее время кадра
+      requestAnimationFrame(raf); // Рекурсивно запускаем следующий кадр
+    }
+
+    // Запускаем анимацию, вызывая функцию raf
+    requestAnimationFrame(raf);
+  });
+
+  // Используем t_onReady и t_onFuncLoad для дополнительных функций
+  t_onReady(function () {
+    t_onFuncLoad('t396_init', function () {
+      // Проверяем наличие элементов с классом .js-store и отсутствие .slick для корректной настройки
+      if (document.querySelector('.js-store') && !document.querySelector('[class*="slick"]')) {
+        // Ждем полной загрузки магазина и затем вызываем событие resize для подстройки элементов
+        t_onFuncLoad('t_store_init', function() {
+          window.dispatchEvent(new Event('resize'));  // Обновляем размеры элементов после загрузки
+        });
+      }
+    });
+  });
+
+  // Событие resize для обновления элементов после полной загрузки
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+      // Проверка на отсутствие элементов с классом slick перед вызовом resize
+      if (!document.querySelector('[class*="slick"]')) {
+        window.dispatchEvent(new Event('resize'));
+      }
+    }, 500); // Задержка для гарантированной загрузки всех элементов
+  });
+</script>
