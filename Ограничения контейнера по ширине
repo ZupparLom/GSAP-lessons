@@ -1,0 +1,20 @@
+https://wizardry-technique.webflow.io/
+
+<style>
+.page-wrapper {
+ font-size: 1vw;
+}
+/* Max Font Size */
+@media screen and (min-width:1600px) {
+ .page-wrapper {font-size: 16px;}
+}
+/* Container Max Width */
+.container-base {
+  max-width: 1544px;
+}
+/* Min Font Size */
+@media screen and (max-width:991px) {
+.page-wrapper {font-size: 9.91px;}
+}
+
+</style>
