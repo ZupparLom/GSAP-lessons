@@ -1,0 +1,35 @@
+Выбираем нужный нам текст → Добавляем ему class: no-break-prepositions
+
+Идем в настройки проекта → Пользовательский код → Перед тегом </body>
+Добавляем код:
+
+<!--Добавление неразрывного пробела-->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Функция для добавления неразрывных пробелов
+    function replacePrepositions(text) {
+      // Список предлогов, которые нужно обработать
+      const prepositions = ["в", "без", "до", "из", "к", "на", "по", "о", "от", "перед", "при", "через", "с", "у", "за", "над", "об", "под", "про", "и", "а", "но", "да", "или", "либо", "то", "ни", "не", "же", "как"];
+
+      // Регулярное выражение для поиска предлогов
+      const regex = new RegExp(`\\s(${prepositions.join("|")})\\s`, "gi");
+
+      // Заменяем пробелы на неразрывные пробелы
+      return text.replace(regex, " $1&nbsp;");
+    }
+
+    // Функция для обработки текста в элементах с определенным классом
+    function processElements() {
+      // Выбираем все элементы с классом "no-break-prepositions"
+      const elements = document.querySelectorAll(".no-break-prepositions");
+
+      elements.forEach(function(element) {
+        // Обрабатываем текст в каждом элементе
+        element.innerHTML = replacePrepositions(element.innerHTML);
+      });
+    }
+
+    // Запускаем обработку текста
+    processElements();
+  });
+</script>
