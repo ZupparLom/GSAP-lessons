@@ -1,0 +1,30 @@
+<!-- анимация меню  --> 
+
+<script>
+        // Получаем элемент заголовка
+        const header = document.querySelector('.header');
+        let scrollPrev = 0;
+
+        // Добавляем transition для плавности
+        header.style.transition = 'opacity 0.3s ease, transform 0.4s ease';
+
+        // Обработчик события прокрутки
+        window.addEventListener('scroll', () => {
+            const scrolled = window.scrollY;
+
+            if (scrolled > 100 && scrolled > scrollPrev) {
+                // Скролл вниз: скрываем заголовок
+                header.style.transform = 'translateY(-100%)'; // Сдвиг вверх
+                header.style.opacity = '0'; // Исчезновение
+            } else {
+                // Скролл вверх: показываем заголовок
+                header.style.transform = 'translateY(0)'; // Возврат на место
+                header.style.opacity = '1'; // Появление
+            }
+
+            // Сохраняем текущее значение прокрутки
+            scrollPrev = scrolled;
+        });
+    </script>
+  
+  <script>  
