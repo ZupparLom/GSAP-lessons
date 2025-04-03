@@ -18,3 +18,24 @@ https://wizardry-technique.webflow.io/
 }
 
 </style>
+
+
+Для rem и em без ограничения 
+<style>
+
+  html { font-size: 0.625vw; } 
+  @media screen and (max-width:991px) { html { font-size: 1.3vw; } }
+  @media screen and (max-width:480px) { html { font-size: 2.56vw; } }
+  
+</style>
+
+
+Для rem и em без с ограничением на 1920 рх
+<style>
+
+  html { font-size: 12px; } 
+  @media screen and (max-width:1920px) { html { font-size: 0.625vw; } }
+  @media screen and (max-width:991px) { html { font-size: 1.3vw; } }
+  @media screen and (max-width:480px) { html { font-size: 2.56vw; } }
+  
+</style>
