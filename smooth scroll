@@ -22,3 +22,43 @@ SmoothScroll({
     touchpadSupport   : true, 
 }) 
 </script>
+
+С ограничение работы только на пк 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/smoothscroll/1.4.10/SmoothScroll.min.js"></script>
+<script>
+// Функция инициализации скролла
+function initSmoothScroll() {
+  if (window.innerWidth > 992) { // Только для экранов шире 992px
+    SmoothScroll({
+      animationTime: 600,
+      stepSize: 100,
+      smoothWheel: true,
+      accelerationDelta: 20,
+      accelerationMax: 1.2,
+      keyboardSupport: true,
+      arrowScroll: 50,
+      pulseAlgorithm: true,
+      pulseScale: 4,
+      pulseNormalize: 1,
+      touchpadSupport: true
+    });
+  }
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', initSmoothScroll);
+
+// Обновление при изменении размера окна
+window.addEventListener('resize', function() {
+  // Переинициализируем только если пересекли границу 992px
+  if ((window.innerWidth > 992 && !window._smoothScrollInitialized) || 
+      (window.innerWidth <= 992 && window._smoothScrollInitialized)) {
+    initSmoothScroll();
+    window._smoothScrollInitialized = window.innerWidth > 992;
+  }
+});
+
+// Первоначальная инициализация
+initSmoothScroll();
+window._smoothScrollInitialized = window.innerWidth > 992;
+</script>
