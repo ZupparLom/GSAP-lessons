@@ -1,0 +1,22 @@
+Модальное окно с классом course-info_pop. Нужно вставлять в родительский див модального окна
+
+<script>
+function toggleScrollLock() {
+    const popup = document.querySelector(".course-info_pop");
+    
+    if (popup && window.getComputedStyle(popup).display !== "none") {
+        document.body.style.overflow = "hidden";
+    } else {
+        document.body.style.overflow = "";
+    }
+}
+
+const observer = new MutationObserver(toggleScrollLock);
+const popup = document.querySelector(".course-info_pop");
+
+if (popup) {
+    observer.observe(popup, { attributes: true, attributeFilter: ["style"] });
+}
+
+toggleScrollLock();
+</script>
