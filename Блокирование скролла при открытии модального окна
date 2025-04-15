@@ -24,6 +24,7 @@ toggleScrollLock();
 
 еще 1 вариант. Если модалок более 1 шт верхний может не работать
 Модальное окно с классом course-info_pop. Нужно вставлять в конец страницы!!
+
 <script>
 function toggleScrollLock() {
     const popups = document.querySelectorAll(".course-info_pop");
