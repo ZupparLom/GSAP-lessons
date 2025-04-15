@@ -20,3 +20,26 @@ if (popup) {
 
 toggleScrollLock();
 </script>
+
+
+еще 1 вариант. Если модалок более 1 шт верхний может не работать
+Модальное окно с классом course-info_pop. Нужно вставлять в конец страницы!!
+<script>
+function toggleScrollLock() {
+    const popups = document.querySelectorAll(".course-info_pop");
+    const anyVisible = Array.from(popups).some(popup =>
+        window.getComputedStyle(popup).display !== "none"
+    );
+
+    document.body.style.overflow = anyVisible ? "hidden" : "";
+}
+
+const popups = document.querySelectorAll(".course-info_pop");
+
+popups.forEach(popup => {
+    const observer = new MutationObserver(toggleScrollLock);
+    observer.observe(popup, { attributes: true, attributeFilter: ["style"] });
+});
+
+toggleScrollLock();
+</script>
