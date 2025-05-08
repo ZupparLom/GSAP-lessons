@@ -1,0 +1,135 @@
+при наведении на любой .menu-link, анимация будет запускаться на его внутреннем элементе .scramble,
+
+<!-- GSAP + ScrambleTextPlugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js "></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrambleTextPlugin.min.js "></script>
+
+<script>
+  gsap.registerPlugin(ScrambleTextPlugin);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const defaultChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    document.querySelectorAll('.menu-link').forEach(link => {
+      const scrambleEl = link.querySelector('.scramble');
+
+      if (!scrambleEl) return;
+
+      const original = scrambleEl.textContent.trim();
+      scrambleEl.innerHTML = `<span>${original}</span>`;
+      const span = scrambleEl.firstElementChild;
+
+      const opts = {
+        text: original,
+        speed: 2,
+        chars: "random"
+      };
+
+      function hoverScramble() {
+        if (
+          !gsap.isTweening(span) &&
+          window.matchMedia('(prefers-reduced-motion: no-preference)').matches
+        ) {
+          gsap.to(span, {
+            duration: 0.8,
+            ease: 'sine.in',
+            scrambleText: opts
+          });
+        }
+      }
+
+      // События на родителе
+      link.addEventListener('pointerenter', hoverScramble);
+    });
+  });
+</script>
+
+
+вариант через gsap без .menu-link
+<!-- GSAP Core + ScrambleTextPlugin -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrambleTextPlugin.min.js"></script>
+
+<script>
+  gsap.registerPlugin(ScrambleTextPlugin);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const defaultChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    document.querySelectorAll('.scramble').forEach(el => {
+      // сохраняем исходный текст и делаем span для плагина
+      const original = el.textContent.trim();
+      el.setAttribute('aria-label', original);
+      el.innerHTML = `<span aria-hidden="true">${original}</span>`;
+      const span = el.firstElementChild;
+
+      const opts = {
+        text: original,
+        speed: 2,
+        chars: defaultChars
+      };
+
+      const hoverScramble = () => {
+        if (
+          !gsap.isTweening(span) &&
+          window.matchMedia('(prefers-reduced-motion: no-preference)').matches
+        ) {
+          gsap.to(span, {
+            duration: 0.8,
+            ease: 'sine.in',
+            scrambleText: opts
+          });
+        }
+      };
+
+      el.addEventListener('pointerenter', hoverScramble);
+      el.addEventListener('focus', hoverScramble);
+    });
+  });
+</script>
+
+
+
+вариант через js без .menu-link
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Параметры "из CodePen"
+    const chars =
+      '0123456789';
+    const scrambleDuration = 0.8; // секунды
+    const intervalTime = 50;      // мс между фреймами
+    const totalIterations = Math.ceil((scrambleDuration * 1000) / intervalTime);
+
+    document.querySelectorAll('.scramble').forEach(el => {
+      const original = el.textContent.trim();
+
+      el.addEventListener('pointerenter', () => {
+        let iteration = 0;
+
+        const doScramble = () => {
+          // собираем новую строку
+          const scrambled = original
+            .split('')
+            .map(c =>
+              Math.random() < iteration / totalIterations
+                ? c
+                : chars.charAt(Math.floor(Math.random() * chars.length))
+            )
+            .join('');
+
+          el.textContent = scrambled;
+          iteration++;
+
+          if (iteration <= totalIterations) {
+            setTimeout(doScramble, intervalTime);
+          } else {
+            el.textContent = original;
+          }
+        };
+
+        doScramble();
+      });
+    });
+  });
+</script>
