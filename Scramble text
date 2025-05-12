@@ -1,3 +1,63 @@
+при наведении на любой .menu-link, '.btn-white', '.menu-open_link', '.btn-black' анимация будет запускаться на его внутреннем элементе .scramble. С ограничением на рахрешение ниже 992
+<!-- GSAP + ScrambleTextPlugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js   "></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrambleTextPlugin.min.js   "></script>
+
+<script>
+  // Функция инициализации scramble-анимации
+  function initScrambleAnimation() {
+    // Проверяем, включена ли анимация для этого разрешения
+    if (window.matchMedia("(min-width: 992px)").matches) {
+      gsap.registerPlugin(ScrambleTextPlugin);
+
+      const defaultChars = '0123456789';
+
+      const parentSelectors = ['.menu-link', '.btn-white', '.menu-open_link', '.btn-black'];
+
+      parentSelectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(parent => {
+          const scrambleEl = parent.querySelector('.scramble');
+
+          if (!scrambleEl) return;
+
+          const original = scrambleEl.textContent.trim();
+          scrambleEl.innerHTML = `<span>${original}</span>`;
+          const span = scrambleEl.firstElementChild;
+
+          const opts = {
+            text: original,
+            speed: 2,
+            chars: defaultChars
+          };
+
+          function hoverScramble() {
+            if (
+              !gsap.isTweening(span) &&
+              window.matchMedia('(prefers-reduced-motion: no-preference)').matches
+            ) {
+              gsap.to(span, {
+                duration: 0.8,
+                ease: 'sine.in',
+                scrambleText: opts
+              });
+            }
+          }
+
+          parent.addEventListener('pointerenter', hoverScramble);
+          parent.addEventListener('focus', hoverScramble);
+        });
+      });
+    } else {
+      console.log("Scramble отключен: разрешение меньше 992px");
+    }
+  }
+
+  // Запускаем после загрузки DOM
+  document.addEventListener('DOMContentLoaded', () => {
+    initScrambleAnimation();
+  });
+</script>
+
 при наведении на любой .menu-link, анимация будет запускаться на его внутреннем элементе .scramble,
 
 <!-- GSAP + ScrambleTextPlugin -->
