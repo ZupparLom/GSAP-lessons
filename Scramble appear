@@ -1,0 +1,76 @@
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/timothydesign/script/split-type.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollTrigger.min.js"></script>
+
+<style>
+.char {
+	will-change: transform;
+}
+.word {
+	will-change: transform;
+}
+.line {
+	will-change: transform;
+  overflow: hidden;
+}
+.title .word {
+	perspective: 1000px;
+	transform-style: preserve-3d;
+}
+/* Line styling */
+.title .line {
+  perspective: 1000px;
+	transform-style: preserve-3d;
+}
+</style>
+
+
+<script>
+// IMAGE IN SPAN
+$(".span-wrapper").each(function (index) {
+  let relatedEl = $(".span-element").eq(index);
+	relatedEl.appendTo($(this));
+});
+
+// TITLE 6
+const title_6 = new SplitType(".title.is-6", {
+  type: "chars,words",
+  charsClass: "char",
+  wordsClass: "word",
+});
+
+const chars_6 = title_6.chars;
+
+chars_6.forEach((char, index) => {
+  const originalText = char.textContent;
+  const characters = "█▓▒░<>!@#$%^&*";
+  const scrambleDuration = 2;
+  const scrambleInterval = 50;
+  const iterations = Math.ceil((scrambleDuration * 500) / scrambleInterval);
+  let currentIteration = 0;
+
+  const scramble = () => {
+    if (currentIteration >= iterations) {
+      char.textContent = originalText;
+      return;
+    }
+
+    char.textContent =
+      Math.random() > currentIteration / iterations
+        ? characters[Math.floor(Math.random() * characters.length)]
+        : originalText;
+
+    currentIteration++;
+    setTimeout(scramble, scrambleInterval);
+  };
+
+  gsap.from(char, {
+    scrollTrigger: {
+      trigger: ".title.is-6",
+      start: "top 50%",
+    },
+    opacity: 0,
+    onStart: scramble,
+  });
+});
+</style>
