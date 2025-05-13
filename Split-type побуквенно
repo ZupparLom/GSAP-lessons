@@ -1,0 +1,28 @@
+Побуквеное появление текста с разбивкой через split-type на пк разрешении
+
+<script src="https://unpkg.com/split-type"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+
+<script>
+// Анимация .animate-h1
+if (window.innerWidth > 991) {
+  const headers = document.querySelectorAll(".scramble-title");
+  headers.forEach((el, i) => {
+    // Разбиваем текст в каждом .animate-h1
+    new SplitType(el, {
+      types: "lines, words, chars",
+      tagName: "span",
+    });
+    // Анимация с задержкой для каждого блока
+    gsap.from(el.querySelectorAll(".char"), {
+      y: "40%",
+      opacity: 0,
+      duration: 0.3,
+      ease: "power1.inOut",
+      stagger: 0.08,
+      delay: 0.3 + i * 0.4, // добавляем общую задержку + задержку между блоками
+    });
+  });
+}
+</script>
