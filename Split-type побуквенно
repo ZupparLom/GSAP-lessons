@@ -5,11 +5,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
 
 <script>
-// Анимация .animate-h1
+// Анимация .scramble-title
 if (window.innerWidth > 991) {
   const headers = document.querySelectorAll(".scramble-title");
   headers.forEach((el, i) => {
-    // Разбиваем текст в каждом .animate-h1
+    // Разбиваем текст в каждом .scramble-title
     new SplitType(el, {
       types: "lines, words, chars",
       tagName: "span",
