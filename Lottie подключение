@@ -1,11 +1,11 @@
 Скрипт вставляем в head
 
-Проигрывание при загрузке 
-Размещение Lottie в div с классом preloader
+
 <!-- Подключение библиотеки Lottie -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.2/lottie.min.js"></script>
 
-
+Проигрывание при загрузке анимации в div .preloader 
+Размещение Lottie в div с классом preloader
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     lottie.loadAnimation({
@@ -14,6 +14,83 @@
       loop: false, // Отключаем зацикливание
       autoplay: true,
       path: '/f/loti_prelouder_finish.json' // Укажи свой путь к JSON
+    });
+  });
+</script>
+
+Проигрывание анимации в div.logo-transform при скроле блока .way_main.
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const container = document.querySelector('.logo-transform');
+    const triggerBlock = document.querySelector('.way_main');
+
+    // Настройки:
+    const startPercent = 0.2; // начало анимации (20% прокрутки блока)
+    const endPercent = 1.0;   // конец анимации (100%)
+
+    // Плавность
+    let targetFrame = 0;
+    let currentFrame = 0;
+    const smoothFactor = 0.1; // чем меньше, тем плавнее
+
+    // Загружаем анимацию
+    const animation = lottie.loadAnimation({
+      container: container,
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      path: 'https://yourdomain.com/animations/logo-transform.json' // Твой путь
+    });
+
+    // Обновляем целевой кадр на скролле
+    function updateTargetFrame() {
+      if (!triggerBlock || !animation.isLoaded) return;
+
+      const rect = triggerBlock.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      const blockTop = rect.top;
+      const blockHeight = rect.height;
+
+      // Расчёт % прокрутки от верха до низа блока
+      const visibleStart = windowHeight - blockHeight;
+      const visibleEnd = 0;
+
+      const totalScroll = windowHeight + blockHeight;
+      const scrolled = windowHeight - blockTop;
+
+      let progress = scrolled / totalScroll;
+
+      // Нормализуем с учётом начальной и конечной точки
+      const range = endPercent - startPercent;
+      let relativeProgress = (progress - startPercent) / range;
+
+      // Ограничиваем от 0 до 1
+      relativeProgress = Math.max(0, Math.min(1, relativeProgress));
+
+      // Целевой кадр
+      targetFrame = relativeProgress * animation.totalFrames;
+    }
+
+    // Анимация плавности (инерция)
+    function smoothUpdate() {
+      currentFrame += (targetFrame - currentFrame) * smoothFactor;
+      animation.goToAndStop(currentFrame, true);
+      requestAnimationFrame(smoothUpdate);
+    }
+
+    // Инициализация после загрузки
+    animation.addEventListener('DOMLoaded', () => {
+      // Начальная поза (0 кадр)
+      animation.goToAndStop(0, true);
+
+      // Запуск инерционного обновления
+      smoothUpdate();
+
+      // Следим за скроллом
+      window.addEventListener('scroll', updateTargetFrame);
+      window.addEventListener('resize', updateTargetFrame);
+      updateTargetFrame(); // при загрузке
     });
   });
 </script>
