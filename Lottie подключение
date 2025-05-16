@@ -1,0 +1,19 @@
+Скрипт вставляем в head
+
+Проигрывание при загрузке 
+Размещение Lottie в div с классом preloader
+<!-- Подключение библиотеки Lottie -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.2/lottie.min.js"></script>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    lottie.loadAnimation({
+      container: document.querySelector('.preloader'),
+      renderer: 'svg',
+      loop: false, // Отключаем зацикливание
+      autoplay: true,
+      path: '/f/loti_prelouder_finish.json' // Укажи свой путь к JSON
+    });
+  });
+</script>
