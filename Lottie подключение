@@ -94,3 +94,32 @@
     });
   });
 </script>
+
+
+Когда наводишь мышку на элемент с классом .btn-white, запускается Lottie-анимация, которая находится внутри дочернего элемента .btn-dots.
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Находим все кнопки
+    const buttons = document.querySelectorAll('.btn-white');
+
+    buttons.forEach(button => {
+      const dotsContainer = button.querySelector('.btn-dots');
+
+      if (!dotsContainer) return;
+
+      // Загружаем анимацию в элемент .btn-dots
+      const anim = lottie.loadAnimation({
+        container: dotsContainer,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: 'https://yourdomain.com/animations/btn-dots.json' // Заменить на свою ссылку
+      });
+
+      // Наведение мышки
+      button.addEventListener('mouseenter', () => {
+        anim.goToAndPlay(0, true);
+      });
+    });
+  });
+</script>
