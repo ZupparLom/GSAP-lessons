@@ -1,0 +1,32 @@
+<!-- Подключение dotLottie Player -->
+<script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
+
+<!-- Proloader -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.querySelector('.spheres');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const player = document.createElement('dotlottie-player');
+    player.setAttribute('src', '/f/preloader.lottie');
+    player.setAttribute('background', 'transparent');
+    player.setAttribute('loop', 'false');
+    player.style.width = '100%';
+    player.style.height = '100%';
+
+    setTimeout(() => {
+      container.appendChild(player);
+
+      player.addEventListener('ready', () => {
+        player.play();
+      });
+
+      player.addEventListener('complete', () => {
+        container.remove();
+        console.log('done');
+      });
+    }, 100);
+  });
+</script>
