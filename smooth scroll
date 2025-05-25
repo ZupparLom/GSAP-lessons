@@ -69,3 +69,29 @@ window.addEventListener('resize', function() {
 initSmoothScroll();
 window._smoothScrollInitialized = window.innerWidth > 992;
 </script>
+
+Еще 1 вариант с ограничение работы только на пк. Более короткий
+<script src="https://cdnjs.cloudflare.com/ajax/libs/smoothscroll/1.4.10/SmoothScroll.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.innerWidth > 992 && typeof SmoothScroll === 'function') {
+    try {
+      // Принудительно инициализируем на весь документ
+      SmoothScroll({
+        animationTime: 600,
+        stepSize: 100,
+        accelerationDelta: 20,
+        accelerationMax: 2,
+        keyboardSupport: true,
+        arrowScroll: 35,
+        pulseAlgorithm: true,
+        pulseScale: 4,
+        pulseNormalize: 1,
+        touchpadSupport: true
+      });
+    } catch (e) {
+      console.warn('SmoothScroll error:', e);
+    }
+  }
+});
+</script>
