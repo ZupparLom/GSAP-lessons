@@ -1,4 +1,41 @@
 Новый вариант Lenis
+<!-- Обязательные стили для Safari -->
+<style>
+  /* Базовые стили Lenis */
+  html.lenis {
+    height: auto;
+  }
+  
+  .lenis.lenis-smooth {
+    scroll-behavior: auto;
+  }
+  
+  /* Фиксы для Safari */
+  @supports (-webkit-touch-callout: none) {
+    html, body {
+      position: relative; /* Важно для корректного fixed */
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      height: 100%; /* Фикс для мобильного Safari */
+    }
+    
+    /* Контейнер для fixed-элементов */
+    .lenis.lenis-smooth [data-lenis-fixed] {
+      position: fixed;
+      -webkit-transform: translateZ(0); /* Аппаратное ускорение */
+      transform: translateZ(0);
+      z-index: 1000; /* Убедитесь, что выше других элементов */
+    }
+    
+    /* Отдельный фикс для модальных окон */
+    .modal, [data-fixed] {
+      position: fixed !important;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+  }
+</style>
+
 <!-- Подключаем Lenis (последняя стабильная версия) -->
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 
