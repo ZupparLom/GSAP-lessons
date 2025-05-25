@@ -1,3 +1,36 @@
+Новый вариант Lenis
+<!-- Подключаем Lenis (последняя стабильная версия) -->
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // 1. Инициализация Lenis
+    const lenis = new Lenis({
+      lerp: 0.08,          // Плавность: меньше значение — более плавно
+      smoothWheel: true,   // Включить плавность колеса мыши
+      smoothTouch: false,  // Можно включить, если нужен плавный тач-скролл
+      infinite: false      // Без бесконечного скролла
+    });
+
+    // 2. Предотвращаем плавный скролл внутри модальных окон (если есть)
+    document.querySelectorAll('[data-lenis-prevent]').forEach((el) => {
+      el.setAttribute('data-lenis-prevent', true);
+    });
+
+    // 3. Анимационный цикл (обязателен)
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+  });
+</script>
+
+
+
+
+Cтарый вариант более громозсткий
 //Recommended CSS в <head>
 <style>
 html.lenis, html.lenis body {
