@@ -5,37 +5,132 @@
   html.lenis {
     height: auto;
   }
-  
+
   .lenis.lenis-smooth {
     scroll-behavior: auto;
   }
-  
-  /* Фиксы для Safari */
-  @supports (-webkit-touch-callout: none) {
-    html, body {
-      position: relative; /* Важно для корректного fixed */
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      height: 100%; /* Фикс для мобильного Safari */
-    }
-    
-    /* Контейнер для fixed-элементов */
-    .lenis.lenis-smooth [data-lenis-fixed] {
-      position: fixed;
-      -webkit-transform: translateZ(0); /* Аппаратное ускорение */
-      transform: translateZ(0);
-      z-index: 1000; /* Убедитесь, что выше других элементов */
-    }
-    
-    /* Отдельный фикс для модальных окон */
-    .modal, [data-fixed] {
-      position: fixed !important;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+
+  /* Стили только для десктопа (шире 992px) */
+  @media (min-width: 993px) {
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        position: relative; /* Нужно для корректного fixed */
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        height: 100%; /* Safari fix */
+      }
+
+      /* Контейнер для фиксированных элементов внутри Lenis */
+      .lenis.lenis-smooth [data-lenis-fixed] {
+        position: fixed;
+        -webkit-transform: translateZ(0); /* аппаратное ускорение */
+        transform: translateZ(0);
+        z-index: 1000;
+      }
+
+      /* Отдельный фикс для модальных окон */
+      .modal, [data-fixed] {
+        position: fixed !important;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
     }
   }
 </style>
 
+<!-- Подключаем Lenis только если ширина экрана больше 992px -->
+<script>
+  if (window.innerWidth > 992) {
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/lenis@1.1.13/dist/lenis.min.js';
+    script.onload = () => {
+      // После загрузки Lenis
+      const lenis = new Lenis({
+        lerp: 0.08, // Плавность: меньше значение — более плавно
+        smoothWheel: true, // Включить плавность колеса мыши
+        smoothTouch: false, // Можно включить, если нужен плавный тач-скролл
+        infinite: false // Без бесконечного скролла
+      });
+
+      // Цикл анимации
+      function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+
+      requestAnimationFrame(raf);
+    };
+    document.head.appendChild(script);
+  }
+</script>
+
+Более длиная версия 
+<!-- Подключаем Lenis только на экранах шире 992px -->
+<script>
+(function() {
+  const isDesktop = () => window.innerWidth > 992;
+  let lenis = null;
+
+  // Инициализация Lenis
+  function initLenis() {
+    if (lenis || !isDesktop()) return;
+
+    // Динамически подключаем библиотеку
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/lenis@1.1.13/dist/lenis.min.js';
+    script.onload = () => {
+      lenis = new Lenis({
+        lerp: 0.08,
+        smoothWheel: true,
+        smoothTouch: false,
+        infinite: false
+      });
+
+      function raf(time) {
+        if (lenis) lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+      requestAnimationFrame(raf);
+    };
+    document.head.appendChild(script);
+  }
+
+  // Удаление Lenis при смене разрешения
+  function destroyLenis() {
+    if (lenis) {
+      lenis.destroy();
+      lenis = null;
+    }
+  }
+
+  // Инициализация при загрузке
+  document.addEventListener('DOMContentLoaded', initLenis);
+
+  // Повторная инициализация при resize
+  window.addEventListener('resize', () => {
+    if (isDesktop()) {
+      if (!lenis) initLenis();
+    } else {
+      destroyLenis();
+    }
+  });
+
+  // 💡 Поддержка динамических сцен (например, в Taptop)
+  const observer = new MutationObserver(() => {
+    if (isDesktop() && !lenis) initLenis();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+
+
+
+
+Старые варианты на всякий случай
 <!-- Подключаем Lenis (последняя стабильная версия) -->
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 
@@ -65,52 +160,30 @@
 </script>
 
 С ограничение работы только на пк
+<!-- Подключаем Lenis только если ширина экрана больше 992px -->
 <script>
-  let lenis = null; // переменная для экземпляра Lenis
-
-  // Функция инициализации Lenis
-  function initLenis() {
-    if (window.innerWidth > 992 && !lenis) {
-      lenis = new Lenis({
-        lerp: 0.08, // Плавность: меньше значение — более плавно
-        smoothWheel: true, // Включить плавность колеса мыши
-        smoothTouch: false, // Можно включить, если нужен плавный тач-скролл
-        infinite: false // Без бесконечного скролла
+  if (window.innerWidth > 992) {
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/lenis@1.1.13/dist/lenis.min.js';
+    script.onload = () => {
+      // После загрузки Lenis
+      const lenis = new Lenis({
+        lerp: 0.08,
+        smoothWheel: true,
+        smoothTouch: false,
+        infinite: false
       });
 
-      // Запускаем цикл анимации
+      // Цикл анимации
       function raf(time) {
-        lenis?.raf(time);
+        lenis.raf(time);
         requestAnimationFrame(raf);
       }
 
       requestAnimationFrame(raf);
-    }
+    };
+    document.head.appendChild(script);
   }
-
-  // Функция для уничтожения Lenis
-  function destroyLenis() {
-    if (lenis) {
-      lenis.destroy();
-      lenis = null;
-    }
-  }
-
-  // Первичная инициализация при загрузке
-  document.addEventListener("DOMContentLoaded", () => {
-    if (window.innerWidth > 992) {
-      initLenis();
-    }
-  });
-
-  // Перенастройка при ресайзе
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 992 && !lenis) {
-      initLenis();
-    } else if (window.innerWidth <= 992 && lenis) {
-      destroyLenis();
-    }
-  });
 </script>
 
 
