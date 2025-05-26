@@ -64,7 +64,54 @@
   });
 </script>
 
+С ограничение работы только на пк
+<script>
+  let lenis = null; // переменная для экземпляра Lenis
 
+  // Функция инициализации Lenis
+  function initLenis() {
+    if (window.innerWidth > 992 && !lenis) {
+      lenis = new Lenis({
+        lerp: 0.08, // Плавность: меньше значение — более плавно
+        smoothWheel: true, // Включить плавность колеса мыши
+        smoothTouch: false, // Можно включить, если нужен плавный тач-скролл
+        infinite: false // Без бесконечного скролла
+      });
+
+      // Запускаем цикл анимации
+      function raf(time) {
+        lenis?.raf(time);
+        requestAnimationFrame(raf);
+      }
+
+      requestAnimationFrame(raf);
+    }
+  }
+
+  // Функция для уничтожения Lenis
+  function destroyLenis() {
+    if (lenis) {
+      lenis.destroy();
+      lenis = null;
+    }
+  }
+
+  // Первичная инициализация при загрузке
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.innerWidth > 992) {
+      initLenis();
+    }
+  });
+
+  // Перенастройка при ресайзе
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 992 && !lenis) {
+      initLenis();
+    } else if (window.innerWidth <= 992 && lenis) {
+      destroyLenis();
+    }
+  });
+</script>
 
 
 Cтарый вариант более громозсткий
