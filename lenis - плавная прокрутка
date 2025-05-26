@@ -80,10 +80,10 @@
     script.src = 'https://unpkg.com/lenis@1.1.13/dist/lenis.min.js';
     script.onload = () => {
       lenis = new Lenis({
-        lerp: 0.08,
-        smoothWheel: true,
-        smoothTouch: false,
-        infinite: false
+        lerp: 0.08,  // Плавность: меньше значение — более плавно
+        smoothWheel: true, // Включить плавность колеса мыши
+        smoothTouch: false, // Можно включить, если нужен плавный тач-скролл
+        infinite: false // Без бесконечного скролла
       });
 
       function raf(time) {
