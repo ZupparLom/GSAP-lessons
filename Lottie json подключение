@@ -18,6 +18,30 @@
   });
 </script>
 
+Проигрывание при загрузке анимации в div .spheres с разделением на сафари плюс ios и другие браузеры плис android 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const container = document.querySelector('.spheres');
+    if (!container) return;
+
+    // Проверка: Safari или iPhone/iPad
+    const ua = window.navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+
+    const useCanvas = isIOS || isSafari;
+
+    lottie.loadAnimation({
+      container: container,
+      renderer: useCanvas ? 'canvas' : 'svg',
+      loop: false,
+      autoplay: true,
+      path: '/f/loti_prelouder_finish.json' // Укажи свой путь к JSON
+    });
+  });
+</script>
+=========================================================================================
+
 Проигрывание анимации в div.logo-transform при скроле блока .way_main.
 <script>
   document.addEventListener('DOMContentLoaded', function () {
