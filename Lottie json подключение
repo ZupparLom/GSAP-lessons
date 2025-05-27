@@ -346,3 +346,79 @@
     });
   });
 </script>
+
+Можно добавлять разные элементы с разными файлами json. В данном случае тут две кнопки с разными лоти
+<!-- Кнопки -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // === Кнопки .btn-white ===
+    const whiteButtons = document.querySelectorAll('.btn-white');
+
+    whiteButtons.forEach(button => {
+      const dotsContainers = button.querySelectorAll('.btn-dots');
+      let targetContainer = null;
+
+      dotsContainers.forEach(container => {
+        if (container.querySelector('img')) {
+          targetContainer = container;
+        }
+      });
+
+      if (!targetContainer) return;
+
+      // Удаляем изображения
+      targetContainer.querySelectorAll('img').forEach(img => img.remove());
+
+      const animContainer = document.createElement('div');
+      animContainer.style.width = '100%';
+      animContainer.style.height = '100%';
+      targetContainer.appendChild(animContainer);
+
+      const anim = lottie.loadAnimation({
+        container: animContainer,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: '/f/knopka_animaciya.json'
+      });
+
+      button.addEventListener('mouseenter', () => {
+        anim.stop();
+        anim.goToAndStop(0, true);
+        anim.setDirection(1);
+        anim.play();
+      });
+    });
+
+    // === Кнопки .btn-black ===
+    const blackButtons = document.querySelectorAll('.btn-black');
+
+    blackButtons.forEach(button => {
+      const targetContainer = button.querySelector('.btn-dots_white');
+      if (!targetContainer) return;
+
+      // Удаляем изображения
+      targetContainer.querySelectorAll('img').forEach(img => img.remove());
+
+      const animContainer = document.createElement('div');
+      animContainer.style.width = '100%';
+      animContainer.style.height = '100%';
+      targetContainer.appendChild(animContainer);
+
+      const anim = lottie.loadAnimation({
+        container: animContainer,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: '/f/white_dots.json'
+      });
+
+      button.addEventListener('mouseenter', () => {
+        anim.stop();
+        anim.goToAndStop(0, true);
+        anim.setDirection(1);
+        anim.play();
+      });
+    });
+  });
+</script>
