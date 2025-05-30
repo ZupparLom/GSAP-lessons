@@ -1,0 +1,224 @@
+Вставка в Embed
+
+сss для вставки ссылки на ролик
+<video muted playsinline preload="auto" style="width: 100%; height: 100%; object-fit: cover;">
+    <source src="https://video.srv18.com/v/mp4/df2fabf1a45e032a701eb178a1e50d0c/1920" type="video/mp4">
+  </video>
+
+скрипт для видео с наведением для превью на пк и проигрывание при нажитии на кнопку. Так же с ленивой загрузкой на моб   
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Получаем все блоки с видео
+  const wrappers = document.querySelectorAll(".review_video-wrap");
+
+  wrappers.forEach(wrapper => {
+    // Элементы внутри каждого блока
+    const video = wrapper.querySelector("video");           // само видео
+    const playBtn = wrapper.querySelector(".btn-play");     // кнопка play
+
+    // Логика состояния
+    let hasStarted = false;  // было ли видео запущено вручную
+    let isPlaying = false;   // текущее состояние (воспроизведение)
+
+    // 🖥️ Превью при наведении — только на экранах > 992px
+    wrapper.addEventListener("mouseenter", () => {
+      if (window.innerWidth > 992 && !hasStarted) {
+        video.muted = true;
+        video.play();
+      }
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      if (window.innerWidth > 992 && !hasStarted) {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+
+    // 👆 Клик по кнопке play
+    playBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // предотвращаем "всплытие" до wrapper
+
+      // Если видео ещё не запускали вручную:
+      if (!hasStarted) {
+        hasStarted = true;
+
+        // 📱 На мобильных — подгружаем видео только при первом нажатии
+        if (window.innerWidth <= 992) {
+          loadVideoSrc(video);
+        }
+
+        // Сброс видео на начало и включение звука
+        video.pause();
+        video.currentTime = 0;
+        video.muted = false;
+      }
+
+      video.play();
+    });
+
+    // ✋ Клик по обёртке (не по кнопке) — ставим на паузу
+    wrapper.addEventListener("click", () => {
+      if (hasStarted && isPlaying) {
+        video.pause();
+      }
+    });
+
+    // ▶️ Когда видео запускается
+    video.addEventListener("play", () => {
+      isPlaying = true;
+
+      if (hasStarted) {
+        // Сначала скрываем по opacity
+        playBtn.style.opacity = '0';
+
+        // Потом убираем из потока через display
+        setTimeout(() => {
+          if (isPlaying) {
+            playBtn.style.display = 'none';
+          }
+        }, 300); // столько же, сколько transition в CSS
+      }
+    });
+
+    // ⏸️ Когда видео ставится на паузу
+    video.addEventListener("pause", () => {
+      isPlaying = false;
+
+      if (hasStarted) {
+        // Снова отображаем кнопку
+        playBtn.style.display = 'flex';
+
+        // На следующий кадр делаем её видимой
+        requestAnimationFrame(() => {
+          playBtn.style.opacity = '1';
+        });
+      }
+    });
+  });
+
+  // 💡 Функция для ленивой подгрузки видео на мобилках
+  function loadVideoSrc(video) {
+    if (!video.src && video.dataset.src) {
+      const source = document.createElement("source");
+      source.src = video.dataset.src;
+      source.type = "video/mp4";
+      video.appendChild(source);
+      video.load();
+    }
+  }
+});
+</script>
+
+===========================================================================================
+
+Автозагрука только на пк и планшетах
+ <script>
+// 📏 Определим ширину экрана при загрузке
+const isMobile = window.innerWidth <= 767;
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Находим все блоки с видео
+  const wrappers = document.querySelectorAll(".review_video-wrap");
+
+  wrappers.forEach(wrapper => {
+    const video = wrapper.querySelector("video");
+    const playBtn = wrapper.querySelector(".btn-play");
+
+    let hasStarted = false;
+    let isPlaying = false;
+
+    // 📱 Отключаем автозагрузку видео только на мобильных
+    if (isMobile) {
+      // Проверим наличие источника внутри <video>
+      const source = video.querySelector("source");
+      if (source && !video.dataset.src) {
+        // Сохраняем src в data-src и удаляем source
+        video.dataset.src = source.src;
+        source.remove();
+        video.load(); // очищаем текущий источник
+      }
+    }
+
+    // 🖥️ Hover-превью только на больших экранах
+    wrapper.addEventListener("mouseenter", () => {
+      if (window.innerWidth > 992 && !hasStarted) {
+        video.muted = true;
+        video.play();
+      }
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      if (window.innerWidth > 992 && !hasStarted) {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+
+    // ▶️ Нажатие на кнопку воспроизведения
+    playBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      if (!hasStarted) {
+        hasStarted = true;
+
+        // 📱 Подгружаем видео на мобильных только при первом запуске
+        if (isMobile) {
+          loadVideoSrc(video);
+        }
+
+        video.pause();
+        video.currentTime = 0;
+        video.muted = false;
+      }
+
+      video.play();
+    });
+
+    // ⏸️ Клик по обертке — ставим видео на паузу
+    wrapper.addEventListener("click", () => {
+      if (hasStarted && isPlaying) {
+        video.pause();
+      }
+    });
+
+    // ▶️ Скрываем кнопку play при запуске
+    video.addEventListener("play", () => {
+      isPlaying = true;
+
+      if (hasStarted) {
+        playBtn.style.opacity = '0';
+
+        setTimeout(() => {
+          if (isPlaying) {
+            playBtn.style.display = 'none';
+          }
+        }, 300);
+      }
+    });
+
+    // ⏸️ Показываем кнопку play при паузе
+    video.addEventListener("pause", () => {
+      isPlaying = false;
+
+      if (hasStarted) {
+        playBtn.style.display = 'flex';
+        requestAnimationFrame(() => {
+          playBtn.style.opacity = '1';
+        });
+      }
+    });
+  });
+
+  // 📦 Ленивое добавление <source> при запуске на мобилке
+  function loadVideoSrc(video) {
+    if (!video.src && video.dataset.src) {
+      const source = document.createElement("source");
+      source.src = video.dataset.src;
+      source.type = "video/mp4";
+      video.appendChild(source);
+      video.load();
+    }
+  }
+});
+</script>
