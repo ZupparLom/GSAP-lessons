@@ -3,7 +3,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Работа с cookie
+  //  Вспомогательные функции для работы с cookie
   const cookies = {
     get: (name) => {
       const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -17,16 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (options.expires) {
         const date = new Date();
-        date.setTime(date.getTime() + options.expires * 24 * 60 * 60 * 1000); // expires в днях
+        date.setTime(date.getTime() + options.expires * 24 * 60 * 60 * 1000); // 🕒 expires = дни → миллисекунды
         options.expires = date.toUTCString();
       }
 
       let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
 
       for (const [key, val] of Object.entries(options)) {
-        updatedCookie += "; " + key;
+        updatedCookie += '; ' + key;
         if (val !== true) {
-          updatedCookie += "=" + val;
+          updatedCookie += '=' + val;
         }
       }
 
@@ -34,60 +34,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Селекторы новых элементов
+  // Ссылки на элементы интерфейса
   const ui = {
-    banner: document.querySelector(".modal-cook"),     // Новый элемент
-    content: document.querySelector(".cook-content"),    // Контент с анимацией
+    banner: document.querySelector(".modal-cook"),
+    content: document.querySelector(".cook-content"),
     consentBtn: document.querySelector(".button-cookie"),
     rejectBtn: document.querySelector(".button-no-cookie")
   };
 
-  //  Скрытие баннера
+  // Скрыть баннер (по таймеру или нажатию)
   const hideBanner = () => {
     if (ui.banner) ui.banner.style.display = "none";
   };
 
-  // Если cookie ещё не установлена — показываем баннер
-  if (cookies.get("cookieAgreement") === undefined && ui.banner) {
-    ui.banner.style.display = "flex";   // Показываем блок
-    animateCookContent();               //  Анимация появления .cook-content
+  // Показать баннер с анимацией
+  const showBanner = () => {
+    if (ui.banner && ui.content) {
+      ui.banner.style.display = "flex";
 
-    //  Согласие на cookies
-    ui.consentBtn?.addEventListener("click", () => {
-      cookies.set("cookieAgreement", "true", { expires: 7 });
-      hideBanner();
-    });
+      // Начальная анимация (невидимость)
+      ui.content.style.transition = "none";
+      ui.content.style.opacity = "0";
+      ui.content.style.transform = "translateY(0vh)";
+      void ui.content.offsetWidth;
 
-    // Отказ от cookies
-    ui.rejectBtn?.addEventListener("click", () => {
-      cookies.set("cookieAgreement", "false", { expires: 7 });
-      hideBanner();
-    });
+      // Анимация появления (через 1.2s, длится 0.5s, ease)
+      ui.content.style.transition = "opacity 0.5s ease 1.2s, transform 0.5s ease 1.2s";
+      requestAnimationFrame(() => {
+        ui.content.style.opacity = "1";
+        ui.content.style.transform = "translateY(0)";
+      });
+    }
+  };
+
+  // Проверка: есть ли уже cookieAgreement?
+  const cookieStatus = cookies.get("cookieAgreement");
+
+  if (cookieStatus === undefined) {
+    // Cookie НЕТ — показываем баннер
+    showBanner();
+  } else {
+    // Cookie УЖЕ ЕСТЬ — скрываем баннер на весь срок действия cookie
+    hideBanner();
   }
 
-// Анимация cook-content (через JS, без внешнего CSS)
-function animateCookContent() {
-  if (!ui.content) return;
-
-  // Сначала убираем возможные старые transition, чтобы стили применились мгновенно
-  ui.content.style.transition = "none";
-
-  // Устанавливаем начальные стили (элемент невидим и смещён)
-  ui.content.style.opacity = "0";
-  ui.content.style.transform = "translateY(0vh)";
-
-  //  Принудительно заставляем браузер применить стили (reflow)
-  void ui.content.offsetWidth;
-
-  // Затем ставим нужные transition и конечные значения — это вызовет анимацию
-  ui.content.style.transition = "opacity 0.5s ease 1.2s, transform 0.5s ease 1.2s";
-
-  // Через requestAnimationFrame — чтобы точно попасть в следующий рендер тик
-  requestAnimationFrame(() => {
-    ui.content.style.opacity = "1";
-    ui.content.style.transform = "translateY(0)";
+  // Согласие на cookies
+  ui.consentBtn?.addEventListener("click", () => {
+    cookies.set("cookieAgreement", "true", { expires: 7 }); // срок действия — 7 дней
+    hideBanner();
   });
-}
+
+  // Отказ от cookies
+  ui.rejectBtn?.addEventListener("click", () => {
+    cookies.set("cookieAgreement", "false", { expires: 7 }); // тоже скрываем на 7 дней
+    hideBanner();
+  });
 });
 </script>
 
