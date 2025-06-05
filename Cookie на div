@@ -52,10 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ui.banner && ui.content) {
       ui.banner.style.display = "flex";
 
-      // Начальная анимация (невидимость)
+      // Начальная анимация (невидимость и движение)
       ui.content.style.transition = "none";
       ui.content.style.opacity = "0";
-      ui.content.style.transform = "translateY(0vh)";
+      ui.content.style.transform = "translateY(4vh)";
       void ui.content.offsetWidth;
 
       // Анимация появления (через 1.2s, длится 0.5s, ease)
