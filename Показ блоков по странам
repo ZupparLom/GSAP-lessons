@@ -1,0 +1,211 @@
+  <!-- Показа блоков по стране с fallback (вдруг не определилась страна) --> 
+<script>
+  // Скрываем содержимое до определения страны
+  document.documentElement.style.visibility = 'hidden';
+
+  class CountryBlockSwitcher {
+    constructor(config) {
+      this.config = config || { ipRules: [] };
+      this.ipInfo = null;
+
+      // Пытаемся получить местоположение
+      this.detectLocation().finally(() => {
+        this.applyIPRules(); // Применяем правила (или fallback)
+        document.documentElement.style.visibility = ''; // Показываем страницу
+      });
+    }
+
+    // Получаем геоданные по IP (используем geojs.io)
+    async detectLocation() {
+      try {
+        const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
+        const data = await res.json();
+        if (data?.country) {
+          this.ipInfo = {
+            country_name: data.country,
+            country_code: data.country_code,
+            country_code3: data.country_code3,
+            region: data.region,
+            city: data.city
+          };
+        }
+      } catch (e) {
+        console.error("Geo detect error:", e);
+      }
+    }
+
+    // Применяем правила показа блоков
+    applyIPRules() {
+      // Если не удалось определить IP — fallback: показываем "ru"
+      if (!this.ipInfo || !this.config.ipRules?.length) {
+        this.applyVisibilityRules(["ru"], ["eng"]);
+        return;
+      }
+
+      const { country_name, country_code, country_code3, region, city } = this.ipInfo;
+
+      // Нормализуем значения
+      const norm = {
+        country: (country_name || '').toLowerCase().trim(),
+        code: (country_code || '').toLowerCase().trim(),
+        code3: (country_code3 || '').toLowerCase().trim(),
+        region: (region || '').toLowerCase().trim(),
+        city: (city || '').toLowerCase().trim(),
+      };
+
+      // Ищем подходящее правило по стране/городу/региону
+      const matched = this.config.ipRules.find(rule => {
+        const c = (rule.country || '').toLowerCase().trim();
+        const ci = (rule.city || '').toLowerCase().trim();
+        const r = (rule.region || '').toLowerCase().trim();
+
+        const countryOk = c === "*" || c === norm.country || c === norm.code || c === norm.code3;
+        const cityOk = ci === "*" || ci === norm.city;
+        const regionOk = r === "*" || r === norm.region;
+
+        return countryOk && cityOk && regionOk;
+      });
+
+      // Если есть совпадение — применяем правило
+      if (matched) {
+        this.applyVisibilityRules(matched.showBlocks, matched.hideBlocks);
+      } else {
+        // &#x1F447; На случай, если страна есть, но ни одно правило не подошло — тоже fallback
+        this.applyVisibilityRules(["ru"], ["eng"]);
+      }
+    }
+
+    // Показать нужные блоки, скрыть остальные
+    applyVisibilityRules(showBlocks, hideBlocks) {
+      (hideBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "none");
+      });
+
+      (showBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "");
+      });
+    }
+  }
+
+  // Инициализация при загрузке страницы
+  document.addEventListener("DOMContentLoaded", () => {
+    new CountryBlockSwitcher({
+      ipRules: [
+        // США
+        { country: "United States", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Великобритания
+        { country: "United Kingdom", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Канада
+        { country: "Canada", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Австралия
+        { country: "Australia", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Все остальные (если сработает, но лучше fallback оставить отдельно выше)
+        { country: "*", city: "*", region: "*", showBlocks: ["ru"], hideBlocks: ["eng"] }
+      ]
+    });
+  });
+</script>
+
+
+  <!-- Показа блоков по стране без fallback --> 
+<script>
+  document.documentElement.style.visibility = 'hidden';
+
+  class CountryBlockSwitcher {
+    constructor(config) {
+      this.config = config || { ipRules: [] };
+      this.ipInfo = null;
+
+      this.detectLocation().finally(() => {
+        this.applyIPRules();
+        document.documentElement.style.visibility = '';
+      });
+    }
+
+    // Получение геоданных пользователя по IP
+    async detectLocation() {
+      try {
+        const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
+        const data = await res.json();
+        if (data?.country) {
+          this.ipInfo = {
+            country_name: data.country,
+            country_code: data.country_code,
+            country_code3: data.country_code3,
+            region: data.region,
+            city: data.city
+          };
+        }
+      } catch (e) {
+        console.error("Geo detect error:", e);
+      }
+    }
+
+    // Применение правил видимости блоков на основе страны
+    applyIPRules() {
+      if (!this.ipInfo || !this.config.ipRules?.length) return;
+
+      const { country_name, country_code, country_code3, region, city } = this.ipInfo;
+
+      // Нормализация значений
+      const norm = {
+        country: (country_name || '').toLowerCase().trim(),
+        code: (country_code || '').toLowerCase().trim(),
+        code3: (country_code3 || '').toLowerCase().trim(),
+        region: (region || '').toLowerCase().trim(),
+        city: (city || '').toLowerCase().trim(),
+      };
+
+      // Поиск подходящего правила
+      const matched = this.config.ipRules.find(rule => {
+        const c = (rule.country || '').toLowerCase().trim();
+        const ci = (rule.city || '').toLowerCase().trim();
+        const r = (rule.region || '').toLowerCase().trim();
+
+        const countryOk = c === "*" || c === norm.country || c === norm.code || c === norm.code3;
+        const cityOk = ci === "*" || ci === norm.city;
+        const regionOk = r === "*" || r === norm.region;
+
+        return countryOk && cityOk && regionOk;
+      });
+
+      // Применение блоков согласно правилу
+      if (matched) {
+        this.applyVisibilityRules(matched.showBlocks, matched.hideBlocks);
+      }
+    }
+
+    // Показать/скрыть нужные блоки
+    applyVisibilityRules(showBlocks, hideBlocks) {
+      (hideBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "none");
+      });
+
+      (showBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "");
+      });
+    }
+  }
+
+  // Инициализация скрипта при загрузке страницы
+  document.addEventListener("DOMContentLoaded", () => {
+    new CountryBlockSwitcher({
+      ipRules: [
+        // США
+        { country: "United States", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Великобритания
+        { country: "United Kingdom", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Канада
+        { country: "Canada", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Австралия
+        { country: "Australia", city: "*", region: "*", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Все остальные
+        { country: "*", city: "*", region: "*", showBlocks: ["ru"], hideBlocks: ["eng"] }
+      ]
+    });
+  });
+</script>
