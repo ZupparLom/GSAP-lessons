@@ -1,0 +1,64 @@
+<script>
+  //запрещаем показ до того как язык не определен
+  document.documentElement.style.visibility = 'hidden';
+
+  class LanguageBlockSwitcher {
+    constructor(config) {
+      this.config = config || { langRules: [] };
+      this.browserLang = this.detectBrowserLanguage();
+      this.applyLangRules(); // Применяем правила
+      document.documentElement.style.visibility = ''; // Показываем
+    }
+
+    //детектим язык браузера
+    detectBrowserLanguage() {
+      const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+      return lang; // например: "en", "en-US", "ru-RU"
+    }
+
+    // правила показа блоков
+    applyLangRules() {
+      if (!this.browserLang || !this.config.langRules?.length) {
+        this.applyVisibilityRules(["ru"], ["eng"]); // fallback
+        return;
+      }
+
+      const matched = this.config.langRules.find(rule => {
+        const ruleLang = (rule.lang || '').toLowerCase();
+        return this.browserLang.startsWith(ruleLang); // начинаем с lang  чтобы "en" подходил и к "en-US"
+      });
+
+      if (matched) {
+        this.applyVisibilityRules(matched.showBlocks, matched.hideBlocks);
+      } else {
+        this.applyVisibilityRules(["ru"], ["eng"]); // fallback
+      }
+    }
+
+    // скрыть остальные
+    applyVisibilityRules(showBlocks, hideBlocks) {
+      (hideBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "none");
+      });
+
+      (showBlocks || []).forEach((id) => {
+        document.querySelectorAll(`#${id}, .${id}, [data-block-id="${id}"]`)
+          .forEach(el => el.style.display = "");
+      });
+    }
+  }
+
+  // Инициализация дом контейнера
+  document.addEventListener("DOMContentLoaded", () => {
+    new LanguageBlockSwitcher({
+      langRules: [
+        // Англоязычные пользователи
+        { lang: "en", showBlocks: ["eng"], hideBlocks: ["ru"] },
+        // Русскоязычные
+        { lang: "ru", showBlocks: ["ru"], hideBlocks: ["eng"] }
+        // Другие
+      ]
+    });
+  });
+</script>
