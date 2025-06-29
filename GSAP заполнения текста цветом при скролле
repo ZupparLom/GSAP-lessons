@@ -33,6 +33,7 @@ https://gsap.taptop.site/fill-text-animation
 <script src="https://cdn.jsdelivr.net/gh/timothydesign/script/split-type.js"></script>
 
 4. 🧠 JS: разбивка текста и анимация
+<script>
 let typeSplit; // Хранит результат разбивки текста
 
 // Разбиваем текст на строки и слова
@@ -76,3 +77,4 @@ function createAnimation() {
     });
   });
 }
+</script>
