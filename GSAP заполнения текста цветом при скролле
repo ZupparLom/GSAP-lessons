@@ -1,0 +1,78 @@
+Анимация заполнения текста цветом при скролле
+https://gsap.taptop.site/fill-text-animation
+Используем GSAP + ScrollTrigger + SplitType.
+
+1. Задаем тексту класс .split-lines
+
+2. CSS: задаём фон-заливку для текста
+<style>
+.split-lines .text-block-wrap-div .line strong {
+  color: black; /* Чёрный цвет для жирных слов */
+}
+
+.split-lines .text-block-wrap-div .line {
+  color: transparent; /* Делаем текст прозрачным */
+  --line-width: 100%; /* Переменная для ширины заливки */
+  position: relative;
+  background-color: grey; /* Фоновый цвет (резервный) */
+
+  background-image: linear-gradient(
+    90deg,
+    hsla(0, 0%, 100%, 1),                /* Белый */
+    hsla(0, 0%, 100%, 1) var(--line-width), 
+    hsla(0, 0%, 100%, 0) var(--line-width) /* Прозрачный */
+  );
+
+  background-clip: text; /* Отображаем фон внутри текста */
+}
+</style>
+
+3. 🔗 Подключаем библиотеки
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/timothydesign/script/split-type.js"></script>
+
+4. 🧠 JS: разбивка текста и анимация
+let typeSplit; // Хранит результат разбивки текста
+
+// Разбиваем текст на строки и слова
+function runSplit() {
+  typeSplit = new SplitType(".split-lines .text-block-wrap-div", {
+    types: "lines, words",
+  });
+  createAnimation(); // Запускаем анимацию после разбивки
+}
+
+runSplit(); // Выполняем при загрузке страницы
+
+5. 📏 Обновление при изменении ширины окна
+let windowWidth = window.innerWidth;
+
+window.addEventListener("resize", function () {
+  if (windowWidth !== window.innerWidth) {
+    windowWidth = window.innerWidth;
+    typeSplit.revert(); // Убираем старую разбивку
+    runSplit();         // Пересоздаём под новую ширину
+  }
+});
+
+6. 🚀 ScrollTrigger-анимация
+gsap.registerPlugin(ScrollTrigger);
+
+function createAnimation() {
+  document.querySelectorAll(".split-lines .text-block-wrap-div .line").forEach(function (line) {
+    let tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: line,         // Запускаем при попадании строки в зону
+        start: "top center",   // Начало анимации
+        end: "bottom center",  // Конец анимации
+        scrub: 2,              // Анимация синхронизирована со скроллом
+      },
+    });
+
+    tl.from(line, {
+      "--line-width": "0%", // Начинаем с пустой заливки
+      duration: 3,
+    });
+  });
+}
