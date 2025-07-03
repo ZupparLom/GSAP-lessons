@@ -1,7 +1,7 @@
 Побуквеное появление текста с разбивкой через split-type на пк разрешении
 
-<script src="https://unpkg.com/split-type"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+<script src="https://unpkg.com/split-type"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
 
 <script>
@@ -25,4 +25,73 @@ if (window.innerWidth > 991) {
     });
   });
 }
+</script>
+
+ПОДРОБНО С ПАУЗАМИ
+<script>
+  // Регистрируем необходимые плагины
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+
+  // Ждём, пока шрифты загрузятся, чтобы не было смещений при разбиении текста
+  document.fonts.ready.then(() => {
+
+    // Выбираем все элементы с классом .scramble-title
+    document.querySelectorAll('.scramble-title').forEach(el => {
+      // 1) Изначально скрываем весь элемент, чтобы он плавно появился при анимации
+      gsap.set(el, { opacity: 0 });
+
+      // 2) Разбиваем текст элемента на строки и символы
+      const split = SplitText.create(el, {
+        type: 'lines, chars' // разбиваем на строки и символы
+      });
+
+      const lines = split.lines; // массив строк
+      const chars = split.chars; // массив символов
+
+      // 3) Для каждой строки явно задаём стили, чтобы сохранить переносы и положение
+      lines.forEach(line => {
+        gsap.set(line, {
+          display: 'block',    // строки будут блочными — сохранят свою высоту
+          position: 'relative' // важно для правильного позиционирования анимации
+        });
+      });
+
+      // 4) Создаём ScrollTrigger, который запускает анимацию при появлении элемента на экране
+      ScrollTrigger.create({
+        trigger: el,       // сам элемент
+        start: 'top 85%',  // когда верх элемента достигает 85% высоты экрана
+        once: true,        // анимация срабатывает только один раз
+
+        onEnter: () => {
+          // 5) Если элемент имеет класс .first — применяем задержку
+          const delay = el.classList.contains('first') ? 4.2 : 0.1;
+
+          // 6) Плавно проявляем весь элемент (контейнер)
+          gsap.to(el, {
+            delay: delay,      // задержка перед появлением
+            duration: 0.3,     // скорость проявления opacity
+            opacity: 1,
+            ease: 'none'       // без затухания
+          });
+
+          // 7) Анимация появления каждого символа
+          gsap.from(chars, {
+            delay: delay,             // тот же delay, что и у opacity
+            duration: 1.8,            // длительность анимации каждого символа
+            opacity: 0,               // стартовая прозрачность
+            scale: 1,               // начальное уменьшение
+            rotation: 0,              // поворот (можно менять вручную)
+            filter: 'none',      // размытие в начале
+            transformOrigin: '50% 50%', // точка трансформации
+            ease: 'power3.out',       // плавное затухание
+            stagger: {
+              each: 0.03,            // задержка между каждым символом
+              from: 'random'          // порядок хаотичный
+            }
+          });
+        }
+      });
+    });
+  });
+
 </script>
