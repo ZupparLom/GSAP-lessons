@@ -1,0 +1,31 @@
+Use Swiper from CDN
+
+Вставляем стили в head
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+/>
+
+В body
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<!-- Инициализация -->
+<script>
+  const swiperTeam = new Swiper('.project_slider-con.swiper', {
+   loop: true,
+ breakpoints: {
+  320: { slidesPerView: 1.1, spaceBetween: 10 },   // Мобильные
+  768: { slidesPerView: 1.5, spaceBetween: 10 },  // Планшеты
+  992: { slidesPerView: 3.1, spaceBetween: 15 }     // Десктопы
+},
+ navigation: {
+    nextEl: '.con-nav_icon--next',
+    prevEl: '.con-nav_icon--prev',
+      },
+  speed: 600,
+  grabCursor: true, // Показывать иконку "руки" при наведении на слайдер
+  lazy: true, // Включает ленивую загрузку изображений
+  resistanceRatio: 0.7, // Параметры управления касанием
+  centeredSlides: false, // не центрировать слайды
+   });
+</script>
