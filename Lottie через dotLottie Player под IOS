@@ -30,3 +30,87 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 100);
   });
 </script>
+
+
+Проигрывание по скроллу
+<!-- Подключение dotLottie Player -->
+<script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const container = document.querySelector('.cycle_transf');       // Контейнер с размерами
+  const triggerBlock = document.querySelector('.cycle_scroll');    // Блок, по скроллу которого идёт анимация
+
+  if (!container || !triggerBlock) return;
+
+  container.innerHTML = ''; // Очистка на случай Webflow динамики
+
+  // Создаём dotLottie player
+  const player = document.createElement('dotlottie-player');
+  player.setAttribute('src', '/f/sphere.lottie');         //  Путь к твоему .lottie
+  player.setAttribute('background', 'transparent');
+  player.setAttribute('loop', 'false');
+  player.setAttribute('autoplay', 'false');
+  player.style.width = '100%';
+  player.style.height = '100%';
+
+  container.appendChild(player);
+
+  // === Настройки ===
+  const startPercent = 0.1;
+  const endPercent = 0.9;
+  const smoothFactor = 0.1;
+
+  let targetFrame = 0;
+  let currentFrame = 0;
+  let totalFrames = 0;
+  let animationLoaded = false;
+
+  // === Скролл логика ===
+  function updateTargetFrame() {
+    if (!animationLoaded || !triggerBlock) return;
+
+    const rect = triggerBlock.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const blockTop = rect.top;
+    const blockHeight = rect.height;
+
+    const totalScroll = windowHeight + blockHeight;
+    const scrolled = windowHeight - blockTop;
+
+    let progress = scrolled / totalScroll;
+    const range = endPercent - startPercent;
+    let relativeProgress = (progress - startPercent) / range;
+
+    relativeProgress = Math.max(0, Math.min(1, relativeProgress));
+    targetFrame = relativeProgress * totalFrames;
+  }
+
+  function smoothUpdate() {
+    if (!animationLoaded) return;
+
+    currentFrame += (targetFrame - currentFrame) * smoothFactor;
+    player.seek(currentFrame);
+    requestAnimationFrame(smoothUpdate);
+  }
+
+  // Ждём загрузку и получаем общее число кадров
+  player.addEventListener('ready', () => {
+    player.pause(); // останавливаем автозапуск
+  });
+
+  player.addEventListener('frame', (e) => {
+    if (!animationLoaded) {
+      totalFrames = e.detail.totalFrames || 100;
+      animationLoaded = true;
+
+      updateTargetFrame();
+      smoothUpdate();
+
+      window.addEventListener('scroll', updateTargetFrame);
+      window.addEventListener('resize', updateTargetFrame);
+    }
+  });
+});
+</script>
+
