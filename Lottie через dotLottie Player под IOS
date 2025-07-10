@@ -32,22 +32,24 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
-Проигрывание по скроллу
+Проигрывание по скроллу с GSAP ScrollTrigger
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
 <!-- Подключение dotLottie Player -->
 <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const container = document.querySelector('.cycle_transf');       // Контейнер с размерами
-  const triggerBlock = document.querySelector('.cycle_scroll');    // Блок, по скроллу которого идёт анимация
+  const container = document.querySelector('.cycle_transf');
+  const triggerBlock = document.querySelector('.cycle_scroll');
 
   if (!container || !triggerBlock) return;
 
-  container.innerHTML = ''; // Очистка на случай Webflow динамики
+  container.innerHTML = '';
 
-  // Создаём dotLottie player
   const player = document.createElement('dotlottie-player');
-  player.setAttribute('src', '/f/sphere.lottie');         //  Путь к твоему .lottie
+  player.setAttribute('src', '/f/sphere.lottie');
   player.setAttribute('background', 'transparent');
   player.setAttribute('loop', 'false');
   player.setAttribute('autoplay', 'false');
@@ -56,47 +58,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   container.appendChild(player);
 
-  // === Настройки ===
-  const startPercent = 0.1;
-  const endPercent = 0.9;
-  const smoothFactor = 0.1;
-
-  let targetFrame = 0;
-  let currentFrame = 0;
   let totalFrames = 0;
   let animationLoaded = false;
 
-  // === Скролл логика ===
-  function updateTargetFrame() {
-    if (!animationLoaded || !triggerBlock) return;
-
-    const rect = triggerBlock.getBoundingClientRect();
-    const windowHeight = window.innerHeight;
-    const blockTop = rect.top;
-    const blockHeight = rect.height;
-
-    const totalScroll = windowHeight + blockHeight;
-    const scrolled = windowHeight - blockTop;
-
-    let progress = scrolled / totalScroll;
-    const range = endPercent - startPercent;
-    let relativeProgress = (progress - startPercent) / range;
-
-    relativeProgress = Math.max(0, Math.min(1, relativeProgress));
-    targetFrame = relativeProgress * totalFrames;
-  }
-
-  function smoothUpdate() {
-    if (!animationLoaded) return;
-
-    currentFrame += (targetFrame - currentFrame) * smoothFactor;
-    player.seek(currentFrame);
-    requestAnimationFrame(smoothUpdate);
-  }
-
-  // Ждём загрузку и получаем общее число кадров
   player.addEventListener('ready', () => {
-    player.pause(); // останавливаем автозапуск
+    player.pause();
   });
 
   player.addEventListener('frame', (e) => {
@@ -104,11 +70,20 @@ document.addEventListener('DOMContentLoaded', function () {
       totalFrames = e.detail.totalFrames || 100;
       animationLoaded = true;
 
-      updateTargetFrame();
-      smoothUpdate();
+      // === Запускаем ScrollTrigger ===
+      gsap.registerPlugin(ScrollTrigger);
 
-      window.addEventListener('scroll', updateTargetFrame);
-      window.addEventListener('resize', updateTargetFrame);
+      ScrollTrigger.create({
+        trigger: triggerBlock,
+        start: 'top 80%',         // когда верх блока попадает в 80% экрана
+        end: 'bottom 20%',        // когда низ блока достигает 20% экрана
+        scrub: true,              // привязка к прокрутке
+        onUpdate: (self) => {
+          const progress = self.progress; // от 0 до 1
+          const frame = progress * totalFrames;
+          player.seek(frame);
+        }
+      });
     }
   });
 });
