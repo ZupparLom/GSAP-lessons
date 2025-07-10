@@ -10,7 +10,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     lottie.loadAnimation({
       container: document.querySelector('.preloader'),
-      renderer: 'svg',
+      renderer: 'svg', // если нет эффектов то лучше ставить canvas
       loop: false, // Отключаем зацикливание
       autoplay: true,
       path: '/f/loti_prelouder_finish.json' // Укажи свой путь к JSON
