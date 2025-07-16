@@ -29,3 +29,12 @@ Use Swiper from CDN
   centeredSlides: false, // не центрировать слайды
    });
 </script>
+
+Стилизовывать высоту, например, контейнера нужно черезс стили css в коде
+<style>
+  .team_con-item {
+    height: 60vh;
+    display: flex;
+    justify-content: center;  /* Центрирует .swiper-wrapper по вертикали */
+  }
+</style>
