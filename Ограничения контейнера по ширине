@@ -30,7 +30,7 @@ https://wizardry-technique.webflow.io/
 </style>
 
 
-Для rem и em без с ограничением на 1920 рх
+Для rem и em с ограничением на 1920 рх
 <style>
 
   html { font-size: 12px; } 
