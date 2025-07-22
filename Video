@@ -228,3 +228,23 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 </script>
+==================================================================================================================
+Автозапустк с loop с паузой перед запуском   
+<video muted playsinline preload="auto" loop style="width: 100%; height: 100%; object-fit: cover; object-position: center 0rem;">
+    <source src="https://video.srv18.com/v/mp4/548756e01c24aa23f0c3cada4c6a2b2f/1920" type="video/mp4">
+  </video>
+  
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const video = document.querySelector('video'); // нашли видео
+  if (!video) return;
+
+  // Ждём 0.8 секунду и запускаем
+  setTimeout(() => {
+    video.play().catch(err => {
+      // если браузер заблокировал autoplay
+      console.warn('Autoplay blocked:', err);
+    });
+  }, 800);
+});
+</script>
