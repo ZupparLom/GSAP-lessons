@@ -1,0 +1,105 @@
+Появление заголовков построчно с выездом под наклоном с разной паузой на заголовках с доп классами first и first-all. На заголовков только с классом title-split паузы нет
+
+<!-- Появление заголовков -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+<script src="https://unpkg.com/split-type"></script>
+
+<script>
+  window.addEventListener("load", () => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Находим все заголовки с классом .title-split
+    const titles = document.querySelectorAll(".title-split");
+
+    titles.forEach(title => {
+      // Оборачиваем текст заголовка в div.text-block-wrap-div
+      if (!title.querySelector(".text-block-wrap-div")) {
+        const text = title.textContent;
+        title.innerHTML = `<div class="text-block-wrap-div">${text}</div>`;
+      }
+
+      const textWrap = title.querySelector(".text-block-wrap-div");
+
+      // Сбрасываем SplitType на случай повторной инициализации
+      SplitType.revert(textWrap);
+
+      // Разбиваем текст на строки
+      const split = new SplitType(textWrap, {
+        types: "lines",
+        lineClass: "line-mask"
+      });
+
+      // Каждую строку оборачиваем в .line-inner для анимации
+      textWrap.querySelectorAll(".line-mask").forEach(line => {
+        const inner = document.createElement("span");
+        inner.classList.add("line-inner");
+        inner.innerHTML = line.innerHTML;
+        line.innerHTML = "";
+        line.appendChild(inner);
+      });
+
+      // Если заголовок с классом .first — анимировать сразу с delay 7.6
+      if (title.classList.contains("first")) {
+        title.style.opacity = "1";
+        animateLines(textWrap.querySelectorAll(".line-inner"), 7.6);
+      }
+
+      // Если заголовок с классом .first-all — анимировать сразу с другим delay (например, 2.0)
+      else if (title.classList.contains("first-all")) {
+        title.style.opacity = "1";
+        animateLines(textWrap.querySelectorAll(".line-inner"), 0.6); // можно менять это значение
+      }
+
+      // Все остальные заголовки — по скроллу с помощью ScrollTrigger
+      else {
+        gsap.fromTo(
+          textWrap.querySelectorAll(".line-inner"),
+          {
+            y: "10rem",
+            rotateZ: 5,
+            opacity: 0
+          },
+          {
+            y: "0rem",
+            rotateZ: 0,
+            opacity: 1,
+            duration: 1.2,
+            stagger: 0,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: title,
+              start: "top 80%",
+              once: true,
+              onEnter: () => {
+                title.style.opacity = "1"; // показать заголовок при входе
+              }
+            }
+          }
+        );
+      }
+    });
+
+    // Общая функция анимации строк
+    function animateLines(elements, delay = 0) {
+      gsap.fromTo(
+        elements,
+        {
+          y: "10rem",
+          rotateZ: 5,
+          opacity: 0
+        },
+        {
+          y: "0rem",
+          rotateZ: 0,
+          opacity: 1,
+          duration: 1.2,
+          delay: delay,
+          stagger: 0,
+          ease: "power3.out"
+        }
+      );
+    }
+  });
+</script>
