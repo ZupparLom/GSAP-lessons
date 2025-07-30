@@ -1,0 +1,86 @@
+Фильтрация коллекции через listbox по категориям (c стилизацией listbox). Так же добавлено авто нумерация списка Item в коллекции и пересчет после смены фильтра.
+в качестве data-category используется текстовое поле куда вносится категории фильтрации и это поле поставлено как скрытый элемент 
+
+<style>
+  .listbox-opt.selected {
+  background-color: #C83116;
+}
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const listbox = document.querySelector('.projects_listbox');
+    const button = listbox.querySelector('.project_listbox-btn');
+    const selectedText = button.querySelector('.listbox-selected-text');
+    const options = listbox.querySelector('.projects_listbox-opts');
+    const items = listbox.querySelectorAll('.listbox-opt');
+    const projects = document.querySelectorAll('.projects_coll-item');
+
+    // Присваиваем data-category из скрытого .category-text
+    projects.forEach(item => {
+      const catEl = item.querySelector('.category-text');
+      if (catEl) {
+        item.setAttribute('data-category', catEl.textContent.trim());
+      }
+    });
+
+    // Функция: пересчитать и обновить номера
+    function updateProjectNumbers() {
+      let visibleIndex = 1;
+      projects.forEach(project => {
+        const isVisible = project.style.display !== "none";
+        const numberEl = project.querySelector('.projects_num');
+        if (isVisible && numberEl) {
+          const padded = visibleIndex.toString().padStart(2, '0');
+          numberEl.textContent = padded;
+          visibleIndex++;
+        } else if (numberEl) {
+          numberEl.textContent = ''; // очистить, если не видим
+        }
+      });
+    }
+
+    //  Первоначальное обновление нумерации
+    updateProjectNumbers();
+
+    // Открытие/закрытие списка
+    button.addEventListener('click', () => {
+      const isClosed = options.style.height === "0px" || !options.style.height;
+      options.style.height = isClosed ? options.scrollHeight + "px" : "0";
+    });
+
+    // Выбор опции + фильтрация
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        const selectedCategory = item.textContent.trim();
+
+        // Обновить текст в кнопке
+        selectedText.textContent = selectedCategory;
+
+        // Подсветить выбранную опцию
+        items.forEach(opt => opt.classList.remove('selected'));
+        item.classList.add('selected');
+
+        // Фильтрация по категории
+        projects.forEach(project => {
+          const projectCategory = project.getAttribute('data-category');
+          const isMatch = selectedCategory === "Все проекты" || projectCategory === selectedCategory;
+          project.style.display = isMatch ? "block" : "none";
+        });
+
+        // Закрыть список
+        options.style.height = "0";
+
+        // Обновить нумерацию
+        updateProjectNumbers();
+      });
+    });
+
+    //Клик вне Listbox — закрыть
+    document.addEventListener('click', (e) => {
+      if (!listbox.contains(e.target)) {
+        options.style.height = "0";
+      }
+    });
+  });
+</script>
