@@ -1,0 +1,65 @@
+Счетчик с запуском через паузу
+<!-- Счетчик в preloader  -->
+<script>
+(() => {
+  const cfg = { from: 0, to: 100, dur: 4400, delay: 900 };
+  const el  = document.querySelector('.number');
+  if (!el) return;
+
+  const io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) {
+      io.disconnect();
+      setTimeout(run, cfg.delay);
+    }
+  }, { threshold: 0.1 });
+  io.observe(el);
+
+  function run() {
+    const start = performance.now();
+    const tick = now => {
+      const t = Math.min((now - start) / cfg.dur, 1);
+      el.textContent = Math.round(cfg.from + (cfg.to - cfg.from) * t);
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+})();
+</script>
+
+Счетчик стартует только когда появляется элемент stage-1
+<!-- Счетчик в preloader  -->
+<script>
+(() => {
+  const cfg = { from: 0, to: 100, dur: 4400 };
+  const el   = document.querySelector('.number');
+  const stage = document.querySelector('.stage-1');
+  if (!el || !stage) return;
+
+  // если уже 1 – стартуем сразу
+  if (getComputedStyle(stage).opacity === '1') {
+    run();
+    return;
+  }
+
+  // иначе крутим requestAnimationFrame, пока opacity не станет 1
+  waitForOpacity();
+
+  function waitForOpacity() {
+    if (getComputedStyle(stage).opacity === '1') {
+      run();
+    } else {
+      requestAnimationFrame(waitForOpacity);
+    }
+  }
+
+  function run() {
+    const start = performance.now();
+    const tick = now => {
+      const t = Math.min((now - start) / cfg.dur, 1);
+      el.textContent = String(Math.round(cfg.from + (cfg.to - cfg.from) * t)).padStart(2, '0');
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+})();
+</script>
