@@ -1,0 +1,2 @@
+<!-- Убрать голубой фон с блок-листа, или любых элементов-->
+<style>* {-webkit-tap-highlight-color: transparent;}</style>
