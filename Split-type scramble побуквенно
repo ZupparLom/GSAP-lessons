@@ -27,6 +27,12 @@ if (window.innerWidth > 991) {
 }
 </script>
 
+
+<!--Подключить GSAP-->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+
 ПОДРОБНО С ПАУЗАМИ
 <script>
   // Регистрируем необходимые плагины
