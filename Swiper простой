@@ -15,7 +15,7 @@ Use Swiper from CDN
    loop: true,
  breakpoints: {
   320: { slidesPerView: 1.1, spaceBetween: 10 },   // Мобильные
-  768: { slidesPerView: 1.5, spaceBetween: 10 },  // Планшеты
+  600: { slidesPerView: 1.5, spaceBetween: 10 },  // Планшеты
   992: { slidesPerView: 3.1, spaceBetween: 15 }     // Десктопы
 },
  navigation: {
@@ -38,3 +38,48 @@ Use Swiper from CDN
     justify-content: center;  /* Центрирует .swiper-wrapper по вертикали */
   }
 </style>
+
+Swiper только для планшетов и моб
+<!-- Слайдер для адаптивов  -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+const SWIPER_ON = 992;   // ≥992 px — выключаем Swiper
+
+let swiperArtical = null;
+
+function initSwiperIfNeeded() {
+  const needSwiper = window.innerWidth < SWIPER_ON;
+
+  if (needSwiper && !swiperArtical) {
+    swiperArtical = new Swiper('.experts_artical.swiper', {
+      loop: false,
+      speed: 600,
+      grabCursor: true,
+      lazy: true,
+      resistanceRatio: 0.7,
+      centeredSlides: false,
+
+      /* breakpoints */
+      breakpoints: {
+        320:  { slidesPerView: 1.1, spaceBetween: -1 }, // мобильные
+        600: { slidesPerView: 1, spaceBetween: 10 }, // Добавлен новый брейкпоинт для планшетов
+        768:  { slidesPerView: 1,   spaceBetween: 10 }, // планшеты
+      },
+
+      navigation: {
+        nextEl: '.con-nav_icon--next',
+        prevEl: '.con-nav_icon--prev',
+      },
+    });
+  } else if (!needSwiper && swiperArtical) {
+    swiperArtical.destroy(true, true);
+    swiperArtical = null;
+  }
+}
+
+/* запускаем */
+initSwiperIfNeeded();
+window.addEventListener('resize', initSwiperIfNeeded);
+</script>
+
