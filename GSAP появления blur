@@ -1,0 +1,136 @@
+GSAP анимация SplitText
+Текст, при попадании в экран, заполняется по буквенно из opacity и фильтр blur.  Текст с классом .blur_text, находится внутри div formular_head 
+
+<!--Подключить GSAP-->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+
+<!--Анимация заголовков-->
+
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    gsap.registerPlugin(SplitText);
+
+    /* 1. Ищем ВСЕ заголовки */
+    const heads = document.querySelectorAll('.formular_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.blur_text');
+      if (!target) return;
+
+      /* 2. Прячем блок */
+      gsap.set(target, { opacity: 0 });
+
+      /* 3. Создаём наблюдатель ДЛЯ КАЖДОГО заголовка */
+      const io = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          io.disconnect();
+
+          const split = new SplitText(target, {
+            type: 'words,chars,lines', //Разбиваем текст
+            aria: 'hidden'
+          });
+          
+        /* 4. Показываем контейнер, но символы ещё скрыты */    
+          gsap.set(target, { opacity: 1 });
+          
+        /* 5. Скрываем символы (они уже в потоке, но невидимы) */
+          gsap.set(split.chars, { opacity: 0, filter: 'blur(10px)' });
+          
+        /* 6. Анимируем появление */
+          gsap.timeline()
+            .to(split.chars, {
+              keyframes: [
+                { opacity: 0.5, filter: 'blur(5px)', duration: 0.2 },
+                { opacity: 1,   filter: 'blur(0px)', duration: 0.2 }
+              ],
+              stagger: 0.06, // задержка между буквами
+              ease: 'sine.out'
+            });
+        }
+      }, { threshold: 0.5 }); // 50 % блока в области просмотра
+
+      io.observe(head);
+    });
+  });
+});
+</script>
+
+
+С добавлением
+Текст, при попадании в экран, заполняется по буквенно из opacity и фильтр blur.  
+Текст с классом .blur_text, находится внутри div formular_head. Заголовок с дополнительным классом big появляется через анимацию каждый раз когда попадает в экран.  
+<!--Подключить GSAP-->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+
+<!--Анимация заголовков-->
+
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    gsap.registerPlugin(SplitText);
+
+    const heads = document.querySelectorAll('.formular_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.blur_text');
+      if (!target) return;
+
+      const isBig = head.classList.contains('big');
+      gsap.set(target, { opacity: 0 }); // Изначально скрываем все заголовки
+
+      // Для big используем пороги 0 и 0.5, для остальных только 0.5
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          // Обработка входа в экран
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            // Если SplitText еще не создан - создаем
+            if (!head._split) {
+              head._split = new SplitText(target, {
+                type: 'words,chars,lines',
+                aria: 'hidden'
+              });
+            }
+
+            const split = head._split;
+
+            // Сброс состояния перед анимацией
+            gsap.killTweensOf(split.chars);
+            gsap.set(target, { opacity: 1 });
+            gsap.set(split.chars, { 
+              opacity: 0, 
+              filter: 'blur(10px)',
+              willChange: 'opacity, filter' // Оптимизация
+            });
+
+            // Запуск анимации
+            gsap.timeline()
+              .to(split.chars, {
+                keyframes: [
+                  { opacity: 0.5, filter: 'blur(5px)', duration: 0.2 },
+                  { opacity: 1, filter: 'blur(0px)', duration: 0.2 }
+                ],
+                stagger: 0.06,
+                ease: 'sine.out'
+              });
+
+            // Отключаем наблюдатель для НЕ-big элементов
+            if (!isBig) io.disconnect();
+
+          // Обработка полного выхода за пределы экрана (только для big)
+          } else if (isBig && entry.intersectionRatio === 0) {
+            gsap.set(target, { opacity: 0 });
+          }
+        });
+      }, {
+        threshold: isBig ? [0, 0.5] : [0.5] // Разные пороги для big
+      });
+
+      io.observe(head);
+    });
+  });
+});
+</script>
