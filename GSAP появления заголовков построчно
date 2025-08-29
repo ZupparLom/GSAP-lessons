@@ -1,5 +1,22 @@
 Появление заголовков построчно с выездом под наклоном с разной паузой на заголовках с доп классами first и first-all. На заголовков только с классом title-split паузы нет
 
+Важно!!!!
+<!-- Стили для анимации заголовка -->
+<style>
+  .line-mask {
+    display: block;
+    overflow: hidden;
+    perspective: 800px;
+    padding-top: 0.7rem; /* Добавим немного вертикального пространства */
+    margin-top: -0.7rem;
+  }
+
+  .line-inner {
+    display: inline-block;
+    transform-origin: bottom center;
+  }
+</style>
+
 <!-- Появление заголовков -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
