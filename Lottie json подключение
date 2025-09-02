@@ -422,3 +422,45 @@
     });
   });
 </script>
+
+Универсальный подход для всех кнопок
+<!-- Подключение библиотеки Lottie -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.2/lottie.min.js"></script>
+
+<!-- Кнопки -->
+<script>
+function initLottieButtons(buttons, containerSelector) {
+    buttons.forEach(button => {
+        const targetContainer = button.querySelector(containerSelector);
+        if (!targetContainer) return;
+
+        // Полностью очищаем контейнер
+        targetContainer.innerHTML = '';
+
+        const animContainer = document.createElement('div');
+        animContainer.style.width = '100%';
+        animContainer.style.height = '100%';
+        targetContainer.appendChild(animContainer);
+
+        const anim = lottie.loadAnimation({
+            container: animContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            path: '/f/knopka_animaciya.json'
+        });
+
+        button.addEventListener('mouseenter', () => {
+            anim.stop();
+            anim.goToAndStop(0, true);
+            anim.setDirection(1);
+            anim.play();
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    initLottieButtons(document.querySelectorAll('.btn-white'), '.btn-dots_black');
+    initLottieButtons(document.querySelectorAll('.btn-black'), '.btn-dots_white');
+});
+</script>
