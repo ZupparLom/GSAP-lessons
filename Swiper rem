@@ -1,0 +1,73 @@
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<!-- Инициализация -->
+<script>
+// Функция: преобразует значение в rem → px
+function remToPx(rem) {
+  // Получаем текущий размер шрифта корня (html)
+  // умножаем его на нужное количество rem
+  return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
+// Переменная для хранения экземпляра Swiper
+let swiperPro;
+
+// Функция для инициализации Swiper с адаптивными отступами
+function initSwiper() {
+  // Если уже существует экземпляр Swiper — удаляем его (иначе будет дублироваться)
+  if (swiperPro) swiperPro.destroy(true, true); // true, true → полностью уничтожить и убрать DOM-стили
+
+  // Создание нового экземпляра Swiper
+  swiperPro = new Swiper('.main_slider-con.swiper', {
+    loop: true, // Зацикливание слайдов
+
+    // Адаптивные настройки через breakpoints
+    breakpoints: {
+      // Мобильные устройства
+      320: {
+        slidesPerView: 1,              // Показывать 1 слайд
+        spaceBetween: remToPx(1.5),      // Отступ между слайдами = 2rem (в пикселях)
+      },
+      // Планшеты
+      768: {
+        slidesPerView: 3,
+        spaceBetween: remToPx(7),
+      },
+      // Десктопы
+      992: {
+        slidesPerView: 3,
+        spaceBetween: remToPx(11.5),   // Больший отступ между слайдами на больших экранах
+      },
+    },
+
+    // Навигационные стрелки
+    navigation: {
+      nextEl: '.main-nav_icon--next', // Кнопка "вперёд"
+      prevEl: '.main-nav_icon--prev', // Кнопка "назад"
+    },
+
+    //️ Разные настройки Swiper
+    speed: 600,              // Скорость анимации слайдов (мс)
+    grabCursor: true,        // Показывать "руку" при наведении
+    lazy: true,              // Включить ленивую загрузку изображений
+    resistanceRatio: 0.7,    // Сопротивление прокрутке при перетаскивании
+    centeredSlides: true,    // Центрировать активный слайд
+  });
+}
+
+// Запускаем Swiper при загрузке страницы
+initSwiper();
+
+// Перезапускаем Swiper при изменении размеров окна
+// Это нужно, чтобы пересчитать rem → px заново
+window.addEventListener('resize', () => {
+  initSwiper();
+});
+
+
+</script>
