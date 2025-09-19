@@ -1,5 +1,13 @@
 Побуквеное появление текста с разбивкой через split-type на пк разрешении
 
+!!! Важно чтобы не маргало при загрузе 
+<!--opacity 0-->
+<style>
+  .scramble-title {
+    opacity: 0;
+}
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
 <script src="https://unpkg.com/split-type"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
