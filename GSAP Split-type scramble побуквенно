@@ -41,10 +41,10 @@ if (window.innerWidth > 991) {
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 
-ПОДРОБНО С ПАУЗАМИ
+<!--ПОДРОБНО С ПАУЗАМИ-->
 <script>
   // Регистрируем необходимые плагины
-  gsap.registerPlugin(ScrollTrigger, SplitText);
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
   // Ждём, пока шрифты загрузятся, чтобы не было смещений при разбиении текста
   document.fonts.ready.then(() => {
@@ -55,7 +55,7 @@ if (window.innerWidth > 991) {
       gsap.set(el, { opacity: 0 });
 
       // 2) Разбиваем текст элемента на строки и символы
-      const split = SplitText.create(el, {
+      const split = new SplitText(el, {
         type: 'lines, chars' // разбиваем на строки и символы
       });
 
@@ -77,7 +77,7 @@ if (window.innerWidth > 991) {
         once: true,        // анимация срабатывает только один раз
 
         onEnter: () => {
-          // 5) Если элемент имеет класс .first — применяем задержку
+          // 5) Если элемент имеет класс .first — применяем задержку 4.2 сек
           const delay = el.classList.contains('first') ? 4.2 : 0.1;
 
           // 6) Плавно проявляем весь элемент (контейнер)
