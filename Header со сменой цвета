@@ -1,0 +1,366 @@
+Прозрабный фон на cover-dark и gray: '#E8E8E8' на осттальных блоках
+<!-- Меню при скролле меняет фон и пропадает и появляется -->  
+<script>
+// Получаем элементы
+const elements = {
+    header: document.querySelector('.header'),
+    menuLinks: document.querySelectorAll('.menu-link'),
+    menuPhone: document.querySelector('.menu_phone'),
+    openBlock: document.querySelector('.open-block'),
+    mobFon: document.querySelector('.mob-fon'),
+    menuMainLogo: document.querySelector('.menu_main-logo'),
+    burger: document.querySelector('.burger')
+};
+
+// Состояния
+const state = {
+    scrollPrev: 0,
+    isOpenBlockActive: false,
+    isMobFonActive: false,
+    isHeaderHidden: false
+};
+
+// Константы
+const COLORS = {
+    dark: '#272727',
+    light: '#FAFAFA',
+    gray: '#E8E8E8',
+    transparent: 'transparent',
+    darkTransparent: 'rgba(39, 39, 39, 0.3)',
+    lightTransparent: 'rgba(250, 250, 250, 0.3)'
+};
+
+const BREAKPOINTS = {
+    desktop: 992
+};
+
+// Инициализация transitions
+function initTransitions() {
+    const { header, menuLinks, menuPhone, burger } = elements;
+    
+    if (header) {
+        header.style.transition = 'opacity 0.3s ease, transform 0.4s ease, background-color 0.2s ease';
+    }
+    
+    menuLinks.forEach(link => {
+        link.style.transition = 'color 0.2s ease';
+    });
+    
+    if (menuPhone) {
+        menuPhone.style.transition = 'border-color 0.2s ease, text-decoration-color 0.2s ease';
+    }
+    
+    if (burger) {
+        burger.style.transition = 'border-color 0.2s ease';
+        const burgerLines = burger.querySelectorAll('.burger_line');
+        burgerLines.forEach(line => {
+            line.style.transition = 'background-color 0.2s ease, border-color 0.2s ease';
+        });
+    }
+}
+
+// Функции проверки разрешения
+const isDesktop = () => window.innerWidth >= BREAKPOINTS.desktop;
+const isMobile = () => window.innerWidth < BREAKPOINTS.desktop;
+
+// Универсальный наблюдатель за изменениями элементов
+function initElementObserver(element, callback) {
+    if (!element) return;
+    
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' || mutation.type === 'characterData') {
+                callback();
+            }
+        });
+    });
+    
+    observer.observe(element, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        childList: false,
+        subtree: false
+    });
+    
+    // Проверка изменений высоты
+    let lastHeight = element.offsetHeight;
+    
+    const checkHeight = () => {
+        const currentHeight = element.offsetHeight;
+        if (currentHeight !== lastHeight) {
+            lastHeight = currentHeight;
+            callback();
+        }
+        requestAnimationFrame(checkHeight);
+    };
+    requestAnimationFrame(checkHeight);
+}
+
+// Проверка состояния элементов
+function checkElementState(element, minHeight = 10) {
+    if (!element) return false;
+    const computedStyle = window.getComputedStyle(element);
+    const height = parseFloat(computedStyle.height) || 0;
+    return height > minHeight;
+}
+
+function checkOpenBlockState() {
+    const wasActive = state.isOpenBlockActive;
+    state.isOpenBlockActive = checkElementState(elements.openBlock);
+    
+    if (wasActive !== state.isOpenBlockActive) {
+        // Если open-block стал активным, показываем header
+        if (state.isOpenBlockActive && isDesktop()) {
+            showHeader();
+        }
+        updateHeaderStyle();
+    }
+}
+
+function checkMobFonState() {
+    const wasActive = state.isMobFonActive;
+    const computedStyle = elements.mobFon ? window.getComputedStyle(elements.mobFon) : null;
+    state.isMobFonActive = computedStyle ? 
+        (computedStyle.height === '100%' || elements.mobFon.offsetHeight > 50) : false;
+    
+    if (wasActive !== state.isMobFonActive) {
+        // Если mob-fon стал активным, показываем header
+        if (state.isMobFonActive && isMobile()) {
+            showHeader();
+        }
+        updateHeaderStyle();
+    }
+}
+
+// Функция для проверки, должен ли header оставаться видимым
+function shouldHeaderStayVisible() {
+    return isDesktop() ? state.isOpenBlockActive : state.isMobFonActive;
+}
+
+// Функция для определения сокращения в зависимости от разрешения
+function getReductionHeight() {
+    return window.innerWidth >= BREAKPOINTS.desktop ? 0.22 : 0.20;
+}
+
+// Функция для проверки, находится ли header над темной секцией
+function isOverDarkSection() {
+    const { header } = elements;
+    if (!header) return false;
+    
+    const headerRect = header.getBoundingClientRect();
+    const headerBottom = headerRect.bottom;
+    const reductionFactor = getReductionHeight();
+    const reducedHeight = window.innerHeight * reductionFactor;
+    
+    const darkSections = document.querySelectorAll('.cover-dark');
+    
+    for (const section of darkSections) {
+        const sectionRect = section.getBoundingClientRect();
+        const adjustedSectionBottom = sectionRect.bottom - reducedHeight;
+        
+        if (headerBottom > sectionRect.top && headerRect.top < adjustedSectionBottom) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Функции показа/скрытия header
+function showHeader() {
+    const { header } = elements;
+    if (header) {
+        header.style.transform = 'translateY(0)';
+        header.style.opacity = '1';
+        state.isHeaderHidden = false;
+    }
+}
+
+function hideHeader() {
+    const { header } = elements;
+    if (header) {
+        header.style.transform = 'translateY(-100%)';
+        header.style.opacity = '0';
+        state.isHeaderHidden = true;
+    }
+}
+
+// Обновление элементов с mix-blend-mode
+function updateBlendModeElements() {
+    const { menuMainLogo, burger } = elements;
+    const isOverDark = isOverDarkSection();
+    const headerShouldStayVisible = shouldHeaderStayVisible();
+    const shouldBeDark = headerShouldStayVisible || !isOverDark;
+    
+    if (isMobile()) {
+        if (menuMainLogo) {
+            menuMainLogo.style.filter = shouldBeDark ? 'invert(1)' : 'none';
+        }
+        
+        if (burger) {
+            const burgerLines = burger.querySelectorAll('.burger_line');
+            burgerLines.forEach(line => {
+                line.style.backgroundColor = shouldBeDark ? COLORS.dark : COLORS.light;
+                line.style.borderColor = shouldBeDark ? COLORS.dark : COLORS.light;
+            });
+            burger.style.borderColor = shouldBeDark ? COLORS.dark : COLORS.light;
+        }
+    } else {
+        if (menuMainLogo) menuMainLogo.style.filter = 'none';
+        if (burger) {
+            const burgerLines = burger.querySelectorAll('.burger_line');
+            burgerLines.forEach(line => {
+                line.style.backgroundColor = '';
+                line.style.borderColor = '';
+            });
+            burger.style.borderColor = '';
+        }
+    }
+}
+
+// Обновление подчеркивания phone элемента
+function updatePhoneUnderline() {
+    const { menuPhone } = elements;
+    if (!menuPhone) return;
+    
+    const isOverDark = isOverDarkSection();
+    const headerShouldStayVisible = shouldHeaderStayVisible();
+    
+    if (isOverDark && !headerShouldStayVisible) {
+        menuPhone.style.borderColor = COLORS.lightTransparent;
+        menuPhone.style.textDecorationColor = COLORS.lightTransparent;
+    } else {
+        menuPhone.style.borderColor = COLORS.darkTransparent;
+        menuPhone.style.textDecorationColor = COLORS.darkTransparent;
+    }
+}
+
+// Обновление цвета ссылок
+function updateMenuLinksColor() {
+    const { menuLinks } = elements;
+    const isOverDark = isOverDarkSection();
+    const headerShouldStayVisible = shouldHeaderStayVisible();
+    const shouldUseDarkText = headerShouldStayVisible || !isOverDark;
+    
+    menuLinks.forEach(link => {
+        link.style.color = shouldUseDarkText ? COLORS.dark : COLORS.light;
+    });
+}
+
+// Обновление фона header
+function updateHeaderBackground() {
+    const { header } = elements;
+    if (!header) return;
+    
+    const isOverDark = isOverDarkSection();
+    header.style.backgroundColor = isOverDark ? COLORS.transparent : COLORS.gray;
+}
+
+// Основная функция обновления стилей
+function updateHeaderStyle() {
+    updateHeaderBackground();
+    updateMenuLinksColor();
+    updatePhoneUnderline();
+    updateBlendModeElements();
+}
+
+// Обработчик события прокрутки - ПРАВИЛЬНАЯ ЛОГИКА
+function handleScroll() {
+    const scrolled = window.scrollY;
+
+    // Если header должен оставаться видимым, не скрываем его
+    if (shouldHeaderStayVisible()) {
+        showHeader();
+        updateHeaderStyle();
+        state.scrollPrev = scrolled;
+        return;
+    }
+
+    // Обычная логика скрытия/показа при скролле
+    if (scrolled > 100) {
+        if (scrolled > state.scrollPrev && !state.isHeaderHidden) {
+            // Скролл вниз: скрываем header
+            hideHeader();
+        } else if (scrolled < state.scrollPrev && state.isHeaderHidden) {
+            // Скролл вверх: показываем header
+            showHeader();
+        }
+    } else if (state.isHeaderHidden) {
+        // Если близко к верху страницы, показываем header
+        showHeader();
+    }
+
+    updateHeaderStyle();
+    state.scrollPrev = scrolled;
+}
+
+// Оптимизация производительности с throttle
+function throttle(func, delay) {
+    let timeout = null;
+    let lastCall = 0;
+    return function() {
+        const context = this;
+        const args = arguments;
+        const now = Date.now();
+        
+        if (now - lastCall >= delay) {
+            func.apply(context, args);
+            lastCall = now;
+        } else {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                func.apply(context, args);
+                lastCall = Date.now();
+            }, delay - (now - lastCall));
+        }
+    };
+}
+
+// Инициализация наблюдателей
+function initObservers() {
+    initElementObserver(elements.openBlock, checkOpenBlockState);
+    if (elements.mobFon) {
+        initElementObserver(elements.mobFon, checkMobFonState);
+    }
+}
+
+// Обработчики событий
+function initEventListeners() {
+    const throttledScroll = throttle(handleScroll, 50);
+    window.addEventListener('scroll', throttledScroll);
+    
+    window.addEventListener('resize', () => {
+        checkOpenBlockState();
+        checkMobFonState();
+        updateHeaderStyle();
+    });
+}
+
+// Основная инициализация
+function init() {
+    initTransitions();
+    initObservers();
+    initEventListeners();
+    updateHeaderStyle();
+}
+
+// Запуск
+document.addEventListener('DOMContentLoaded', init);
+window.addEventListener('load', init);
+
+// Дебаг функция
+function debugInfo() {
+    console.log('Current settings:', {
+        width: window.innerWidth + 'px',
+        isDesktop: isDesktop(),
+        isMobile: isMobile(),
+        isOpenBlockActive: state.isOpenBlockActive,
+        isMobFonActive: state.isMobFonActive,
+        shouldStayVisible: shouldHeaderStayVisible(),
+        isOverDarkSection: isOverDarkSection(),
+        scrollY: window.scrollY,
+        scrollPrev: state.scrollPrev,
+        isHeaderHidden: state.isHeaderHidden
+    });
+}
+</script>
