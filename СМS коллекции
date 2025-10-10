@@ -1,0 +1,73 @@
+Удалает блок с атрибутом accordion="achiev" если в элементе с rich-text в нутри него поле в коллекции пустое
+<script>
+// Ждем полной загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Функция для проверки и скрытия пустых блоков "Достижения"
+    function hideEmptyAchievements() {
+        // Находим все элементы с классом resume_collection
+        const resumeCollections = document.querySelectorAll('.resume_collection');
+        
+        // Перебираем каждую коллекцию
+        resumeCollections.forEach(collection => {
+            // В каждой коллекции ищем все элементы с атрибутом accordion="achiev"
+            const achievementAccordions = collection.querySelectorAll('[accordion="achiev"]');
+            
+            // Перебираем каждый аккордеон достижений
+            achievementAccordions.forEach(accordion => {
+                // Ищем внутри элемент с атрибутом rich-text=""
+                const richTextElement = accordion.querySelector('[rich-text=""]');
+                
+                // Проверяем, есть ли элемент и пустой ли он
+                if (richTextElement) {
+                    // Получаем текстовое содержимое, удаляя пробелы и переносы
+                    const textContent = richTextElement.textContent.trim();
+                    
+                    // Если содержимое пустое, скрываем весь аккордеон
+                    if (textContent === '') {
+                        accordion.style.display = 'none';
+                    } else {
+                        // Если не пустой, убедимся что отображается (на случай повторного запуска)
+                        accordion.style.display = '';
+                    }
+                }
+            });
+        });
+    }
+    
+    // Вызываем функцию сразу после загрузки DOM
+    hideEmptyAchievements();
+    
+    // Дополнительно: если контент подгружается динамически (AJAX),
+    // можно вызвать функцию после загрузки контента
+    // Например, если у вас есть события завершения загрузки CMS коллекции
+    
+    // Опционально: наблюдатель за изменениями DOM на случай динамической подгрузки
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // Проверяем, были ли добавлены элементы resume_collection
+                let shouldCheck = false;
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && (
+                        node.classList.contains('resume_collection') || 
+                        node.querySelector('.resume_collection')
+                    )) {
+                        shouldCheck = true;
+                    }
+                });
+                
+                if (shouldCheck) {
+                    // Даем небольшую задержку для полной загрузки контента
+                    setTimeout(hideEmptyAchievements, 100);
+                }
+            }
+        });
+    });
+    
+    // Начинаем наблюдение за изменениями в body
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+});
+</script>
