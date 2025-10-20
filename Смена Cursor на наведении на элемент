@@ -1,0 +1,155 @@
+Смена курсора на элемент с классом custom-cursor при наведении на элементы с классом cases__slider-item
+
+<style>
+/* Изначально скрываем кастомный курсор */
+.custom-cursor {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none; /* Важно: чтобы курсор не мешал кликам по другим элементам */
+  z-index: 9999; /* Важно: чтобы курсор был поверх всех элементов */
+  transform: scale(0); /* Начальное состояние - скрыт через scale */
+  transition: transform 0.4s ease; /* Анимация появления/исчезновения */
+}
+
+/* Класс для показа с анимацией */
+.custom-cursor.active {
+  display: block;
+  transform: scale(1); /* Финальное состояние - полностью показан */
+}
+
+/* Класс для скрытия с анимацией */
+.custom-cursor.hiding {
+  display: block;
+  transform: scale(0); /* Анимация скрытия через scale */
+}
+
+/* Скрываем стандартный курсор при наведении на cases__slider-item */
+.cases__slider-item,
+.cases__slider-item * {
+  cursor: none !important; /* Важно: скрываем стандартный курсор */
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const customCursor = document.querySelector('.custom-cursor');
+  const sliderItems = document.querySelectorAll('.cases__slider-item');
+  
+  let lastX = 0;
+  let lastY = 0;
+  let isMouseMoving = false;
+  let hideAnimationId = null;
+  
+  function getCursorPosition(x, y) {
+    for (let item of sliderItems) {
+      const rect = item.getBoundingClientRect();
+      const buffer = 0.05; // 5% буферная зона
+      
+      // Точная зона
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return 'exact';
+      }
+      
+      // Буферная зона
+      const bufferX = rect.width * buffer;
+      const bufferY = rect.height * buffer;
+      if (x >= rect.left - bufferX && x <= rect.right + bufferX && 
+          y >= rect.top - bufferY && y <= rect.bottom + bufferY) {
+        return 'buffer';
+      }
+    }
+    return 'outside';
+  }
+  
+  function updateForMouseMove(e) {
+    const x = e.clientX;
+    const y = e.clientY;
+    const position = getCursorPosition(x, y);
+    
+    // Обновляем позицию
+    if (customCursor) {
+      const rect = customCursor.getBoundingClientRect();
+      customCursor.style.left = (x - rect.width / 2) + 'px';
+      customCursor.style.top = (y - rect.height / 2) + 'px';
+    }
+    
+    if (position === 'exact') {
+      // В точной зоне - показываем
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      customCursor.style.display = 'block';
+      document.body.style.cursor = 'none';
+      customCursor.classList.remove('hiding');
+      setTimeout(() => customCursor.classList.add('active'), 10);
+    } else {
+      // В буферной зоне или вне её - начинаем скрытие
+      if (!hideAnimationId) {
+        customCursor.classList.remove('active');
+        customCursor.classList.add('hiding');
+        document.body.style.cursor = 'auto';
+        
+        hideAnimationId = setTimeout(() => {
+          customCursor.style.display = 'none';
+          customCursor.classList.remove('hiding');
+          hideAnimationId = null;
+        }, 400);
+      }
+    }
+  }
+  
+  function updateForScroll() {
+    const position = getCursorPosition(lastX, lastY);
+    
+    // Для скролла используем ту же логику, что и для движения мыши
+    if (position === 'exact') {
+      // В точной зоне - показываем
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      customCursor.style.display = 'block';
+      document.body.style.cursor = 'none';
+      customCursor.classList.remove('hiding');
+      setTimeout(() => customCursor.classList.add('active'), 10); // Задержка для плавности
+    } else {
+      // В буферной зоне или вне её - начинаем скрытие
+      if (!hideAnimationId) {
+        customCursor.classList.remove('active');
+        customCursor.classList.add('hiding');
+        document.body.style.cursor = 'auto';
+        
+        // ВАЖНО: Через 400мс полностью скрываем элемент
+        hideAnimationId = setTimeout(() => {
+          customCursor.style.display = 'none';
+          customCursor.classList.remove('hiding');
+          hideAnimationId = null;
+        }, 400);
+      }
+    }
+  }
+  
+  document.addEventListener('mousemove', function(e) {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    isMouseMoving = true;
+    updateForMouseMove(e);
+  });
+  
+  document.addEventListener('scroll', function() {
+    isMouseMoving = false;
+    updateForScroll();
+  });
+  
+  window.addEventListener('resize', function() {
+    if (isMouseMoving) {
+      updateForMouseMove({ clientX: lastX, clientY: lastY });
+    } else {
+      updateForScroll();
+    }
+  });
+});
+</script>
