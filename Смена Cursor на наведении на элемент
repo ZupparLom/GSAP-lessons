@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastY = 0;
   let isMouseMoving = false;
   let hideAnimationId = null;
+  let cursorRestoreId = null; // Добавляем второй таймер
   
   function getCursorPosition(x, y) {
     for (let item of sliderItems) {
@@ -81,6 +82,10 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(hideAnimationId);
         hideAnimationId = null;
       }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
       customCursor.style.display = 'block';
       document.body.style.cursor = 'none';
       customCursor.classList.remove('hiding');
@@ -90,8 +95,14 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!hideAnimationId) {
         customCursor.classList.remove('active');
         customCursor.classList.add('hiding');
-        document.body.style.cursor = 'auto';
         
+        // ВАЖНО: Через 0.2 секунды возвращаем стандартный курсор
+        cursorRestoreId = setTimeout(() => {
+          document.body.style.cursor = 'auto';
+          cursorRestoreId = null;
+        }, 200);
+        
+        // ВАЖНО: Через 0.4 секунды полностью скрываем кастомный курсор
         hideAnimationId = setTimeout(() => {
           customCursor.style.display = 'none';
           customCursor.classList.remove('hiding');
@@ -111,18 +122,27 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(hideAnimationId);
         hideAnimationId = null;
       }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
       customCursor.style.display = 'block';
       document.body.style.cursor = 'none';
       customCursor.classList.remove('hiding');
-      setTimeout(() => customCursor.classList.add('active'), 10); // Задержка для плавности
+      setTimeout(() => customCursor.classList.add('active'), 10);
     } else {
       // В буферной зоне или вне её - начинаем скрытие
       if (!hideAnimationId) {
         customCursor.classList.remove('active');
         customCursor.classList.add('hiding');
-        document.body.style.cursor = 'auto';
         
-        // ВАЖНО: Через 400мс полностью скрываем элемент
+        // ВАЖНО: Через 0.2 секунды возвращаем стандартный курсор
+        cursorRestoreId = setTimeout(() => {
+          document.body.style.cursor = 'auto';
+          cursorRestoreId = null;
+        }, 200);
+        
+        // ВАЖНО: Через 0.4 секунды полностью скрываем кастомный курсор
         hideAnimationId = setTimeout(() => {
           customCursor.style.display = 'none';
           customCursor.classList.remove('hiding');
