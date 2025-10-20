@@ -1,0 +1,66 @@
+Движение элементов product__item-img1, product__item-img2 и product__item-img1 при движении мышки в зоне элемента product__wrap. 
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const wrap = document.querySelector('.product__wrap');
+    const img1 = document.querySelector('.product__item-img1');
+    const img2 = document.querySelector('.product__item-img2');
+    const img3 = document.querySelector('.product__item-img3');
+    
+    // Уменьшаем коэффициенты для меньшей амплитуды
+    const factors = [0.04, 0.03, 0.02]; // Еще меньше коэффициенты
+    
+    // Переменные для сглаживания
+    let targetX = 0, targetY = 0;
+    let currentX1 = 0, currentY1 = 0;
+    let currentX2 = 0, currentY2 = 0;
+    let currentX3 = 0, currentY3 = 0;
+    
+    // Коэффициент сглаживания (чем ближе к 1, тем плавнее)
+    const smoothing = 0.25;
+
+    // Функция анимации
+    function animate() {
+        // Плавно интерполируем текущие позиции к целевым
+        currentX1 += (targetX * factors[0] - currentX1) * smoothing;
+        currentY1 += (-targetY * factors[0] - currentY1) * smoothing;
+        
+        currentX2 += (-targetX * factors[1] - currentX2) * smoothing;
+        currentY2 += (-targetY * factors[1] - currentY2) * smoothing;
+        
+        currentX3 += (targetX * factors[2] - currentX3) * smoothing;
+        currentY3 += (targetY * factors[2] - currentY3) * smoothing;
+        
+        // Применяем трансформации
+        if (img1) {
+            img1.style.transform = `translate(${currentX1}px, ${currentY1}px)`;
+        }
+        if (img2) {
+            img2.style.transform = `translate(${currentX2}px, ${currentY2}px)`;
+        }
+        if (img3) {
+            img3.style.transform = `translate(${currentX3}px, ${currentY3}px)`;
+        }
+        
+        // Продолжаем анимацию
+        requestAnimationFrame(animate);
+    }
+    
+    // Запускаем анимацию
+    animate();
+
+    wrap.addEventListener('mousemove', function(e) {
+        const rect = wrap.getBoundingClientRect();
+        
+        // Обновляем целевые позиции (без немедленного применения)
+        targetX = e.clientX - rect.left - rect.width / 2;
+        targetY = e.clientY - rect.top - rect.height / 2;
+    });
+    
+    wrap.addEventListener('mouseleave', function() {
+        // Плавно возвращаем к нулю при уходе мыши
+        targetX = 0;
+        targetY = 0;
+    });
+});
+</script>
