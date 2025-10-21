@@ -34,6 +34,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Комбинированная проверка: тач-устройство ИЛИ экран меньше 992px
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth < 992;
+  
+  if (isTouchDevice || isSmallScreen) {
+    return; // Не инициализируем кастомный курсор на мобильных и планшетах
+  }
+  
+  // ВЕСЬ КОД КАСТОМНОГО КУРСОРА НИЖЕ - ТОЛЬКО ДЛЯ ДЕСКТОПОВ
+  
   const customCursor = document.querySelector('.custom-cursor');
   const sliderItems = document.querySelectorAll('.cases__slider-item');
   
@@ -41,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastY = 0;
   let isMouseMoving = false;
   let hideAnimationId = null;
-  let cursorRestoreId = null; // Добавляем второй таймер
+  let cursorRestoreId = null;
   
   function getCursorPosition(x, y) {
     for (let item of sliderItems) {
