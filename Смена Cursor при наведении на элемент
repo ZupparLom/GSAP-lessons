@@ -34,12 +34,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Комбинированная проверка: тач-устройство ИЛИ экран меньше 992px
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // ПРОВЕРКА ТОЛЬКО ПО РАЗРЕШЕНИЮ - убираем проверку тач-устройств
   const isSmallScreen = window.innerWidth < 992;
   
-  if (isTouchDevice || isSmallScreen) {
-    return; // Не инициализируем кастомный курсор на мобильных и планшетах
+  if (isSmallScreen) {
+    return; // Не инициализируем кастомный курсор на экранах меньше 992px
   }
   
   // ВЕСЬ КОД КАСТОМНОГО КУРСОРА НИЖЕ - ТОЛЬКО ДЛЯ ДЕСКТОПОВ
