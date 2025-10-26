@@ -1,0 +1,303 @@
+При наведении на элементы cases__slider-item, product__item-link и win__list-link стандартный курсор сменяется кастомным custom-cursor. Исключены элементы прелодера и меню. 
+Стоит буферная зона на скрытие кастомного курсора при скролле и пауза перед появлением стандартного курсора. Чтобы при скролле срабатывали все стадии наведения используется ЗАМЕНА на ПРОЗРАЧНЫЙ стандартный курсор.
+Не используется cursor:none
+<style>
+/* Изначально скрываем кастомный курсор */
+.custom-cursor {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: scale(0);
+  transition: transform 0.4s ease;
+}
+
+/* Класс для показа с анимацией */
+.custom-cursor.active {
+  display: block;
+  transform: scale(1);
+}
+
+/* Класс для скрытия с анимацией */
+.custom-cursor.hiding {
+  display: block;
+  transform: scale(0);
+}
+
+/* ЗАМЕНА: Полностью прозрачный курсор */
+body.transparent-cursor,
+body.transparent-cursor * {
+  cursor: none !important;
+}
+
+/* АЛЬТЕРНАТИВА: Если выше не работает, используем 1x1 прозрачный PNG */
+body.transparent-cursor-alt,
+body.transparent-cursor-alt * {
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=') 0 0, auto !important;
+}
+
+/* ВАЖНО: Убираем принудительное скрытие курсора для элементов меню и прелоадера */
+.menu__btn,
+.menu__btn *,
+.menu__main,
+.menu__main *,
+.menu__open,
+.menu__open *,
+.preloader,
+.preloader * {
+  /* Не устанавливаем cursor: auto, чтобы Taptop мог использовать свои стили */
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ПРОВЕРКА ТОЛЬКО ПО РАЗРЕШЕНИЮ - убираем проверку тач-устройств
+  const isSmallScreen = window.innerWidth < 992;
+  
+  if (isSmallScreen) {
+    return; // Не инициализируем кастомный курсор на экранах меньше 992px
+  }
+  
+  // ВЕСЬ КОД КАСТОМНОГО КУРСОРА НИЖЕ - ТОЛЬКО ДЛЯ ДЕСКТОПОВ
+  
+  const customCursor = document.querySelector('.custom-cursor');
+  
+  // Получаем элементы из всех блоков где должен быть кастомный курсор
+  const sliderItems = document.querySelectorAll('.cases__slider-item');
+  const productLinks = document.querySelectorAll('.product__item-link');
+  const listLinks = document.querySelectorAll('.win__list-link');  
+  
+  // Добавляем элементы меню и прелоадер (кастомного курсора быть не должно)
+  const menuBtns = document.querySelectorAll('.menu__btn');
+  const menuMains = document.querySelectorAll('.menu__main');
+  const menuOpens = document.querySelectorAll('.menu__open');
+  const preloaders = document.querySelectorAll('.preloader');
+  
+  // Объединяем все элементы меню и прелоадер
+  const allPriorityElements = [...menuBtns, ...menuMains, ...menuOpens, ...preloaders];
+  
+  // Объединяем все элементы, которые должны активировать кастомный курсор
+  const allTriggerElements = [...sliderItems, ...productLinks, ...listLinks];
+  
+  let lastX = 0;
+  let lastY = 0;
+  let isMouseMoving = false;
+  let hideAnimationId = null;
+  let cursorRestoreId = null;
+  
+  // Функция проверки видимости элемента (включая проверку родительских контейнеров)
+  function isElementVisible(element) {
+    // Проверяем, виден ли сам элемент
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+    
+    // Проверяем родительские контейнеры на наличие overflow: hidden и height: 0
+    let parent = element.parentElement;
+    while (parent && parent !== document.body) {
+      const parentStyle = window.getComputedStyle(parent);
+      
+      // Если родитель скрыт через height: 0 и overflow: hidden
+      if (parentStyle.height === '0px' && parentStyle.overflow === 'hidden') {
+        return false;
+      }
+      
+      // Если родитель скрыт другими способами
+      if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden') {
+        return false;
+      }
+      
+      parent = parent.parentElement;
+    }
+    
+    return true;
+  }
+  
+  // Функция проверки, находится ли курсор над элементами с приоритетом (меню и прелоадер)
+  function isCursorOverPriorityElements(x, y) {
+    for (let item of allPriorityElements) {
+      const rect = item.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  // Функция проверки позиции курсора
+  function getCursorPosition(x, y) {
+    // ВАЖНО: Сначала проверяем элементы с приоритетом - они имеют приоритет
+    if (isCursorOverPriorityElements(x, y)) {
+      return 'priority';
+    }
+    
+    for (let item of allTriggerElements) {
+      // ПРОВЕРКА ВИДИМОСТИ: если элемент не видим (скрыт в закрытом аккордеоне), пропускаем его
+      if (!isElementVisible(item)) {
+        continue;
+      }
+      
+      const rect = item.getBoundingClientRect();
+      const buffer = 0.03; // 3% буферная зона
+      
+      // Точная зона
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return 'exact';
+      }
+      
+      // Буферная зона
+      const bufferX = rect.width * buffer;
+      const bufferY = rect.height * buffer;
+      if (x >= rect.left - bufferX && x <= rect.right + bufferX && 
+          y >= rect.top - bufferY && y <= rect.bottom + bufferY) {
+        return 'buffer';
+      }
+    }
+    return 'outside';
+  }
+  
+  // Функция для сброса стилей курсора и возврата управления Taptop
+  function resetCursorStyles() {
+    // ВАЖНО: Сбрасываем прозрачный курсор
+    document.body.classList.remove('transparent-cursor', 'transparent-cursor-alt');
+    customCursor.style.display = 'none';
+    customCursor.classList.remove('active', 'hiding');
+  }
+  
+  function updateForMouseMove(e) {
+    const x = e.clientX;
+    const y = e.clientY;
+    const position = getCursorPosition(x, y);
+    
+    // Обновляем позицию
+    if (customCursor) {
+      const rect = customCursor.getBoundingClientRect();
+      customCursor.style.left = (x - rect.width / 2) + 'px';
+      customCursor.style.top = (y - rect.height / 2) + 'px';
+    }
+    
+    // ВАЖНО: Добавляем проверку для элементов с приоритетом
+    if (position === 'priority') {
+      // Над элементами с приоритетом - сбрасываем все стили и позволяем Taptop управлять курсором
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
+      resetCursorStyles();
+    } else if (position === 'exact') {
+      // В точной зоне - показываем кастомный курсор
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
+      customCursor.style.display = 'block';
+      // Используем оба варианта для максимальной совместимости
+      document.body.classList.add('transparent-cursor', 'transparent-cursor-alt');
+      customCursor.classList.remove('hiding');
+      setTimeout(() => customCursor.classList.add('active'), 10);
+    } else {
+      // В буферной зоне или вне её - начинаем скрытие
+      if (!hideAnimationId) {
+        customCursor.classList.remove('active');
+        customCursor.classList.add('hiding');
+        
+        // Через 0.2 секунды сбрасываем стили курсора
+        cursorRestoreId = setTimeout(() => {
+          resetCursorStyles();
+          cursorRestoreId = null;
+        }, 200);
+        
+        // Через 0.4 секунды полностью скрываем кастомный курсор
+        hideAnimationId = setTimeout(() => {
+          customCursor.style.display = 'none';
+          customCursor.classList.remove('hiding');
+          hideAnimationId = null;
+        }, 400);
+      }
+    }
+  }
+  
+  function updateForScroll() {
+    const position = getCursorPosition(lastX, lastY);
+    
+    // Для скролла используем ту же логику, что и для движения мыши
+    if (position === 'priority') {
+      // Над элементами с приоритетом - сбрасываем все стили
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
+      resetCursorStyles();
+    } else if (position === 'exact') {
+      // В точной зоне - показываем
+      if (hideAnimationId) {
+        clearTimeout(hideAnimationId);
+        hideAnimationId = null;
+      }
+      if (cursorRestoreId) {
+        clearTimeout(cursorRestoreId);
+        cursorRestoreId = null;
+      }
+      customCursor.style.display = 'block';
+      // Используем оба варианта для максимальной совместимости
+      document.body.classList.add('transparent-cursor', 'transparent-cursor-alt');
+      customCursor.classList.remove('hiding');
+      setTimeout(() => customCursor.classList.add('active'), 10);
+    } else {
+      // В буферной зоне или вне её - начинаем скрытие
+      if (!hideAnimationId) {
+        customCursor.classList.remove('active');
+        customCursor.classList.add('hiding');
+        
+        // Через 0.2 секунды сбрасываем стили курсора
+        cursorRestoreId = setTimeout(() => {
+          resetCursorStyles();
+          cursorRestoreId = null;
+        }, 200);
+        
+        // Через 0.4 секунды полностью скрываем кастомный курсор
+        hideAnimationId = setTimeout(() => {
+          customCursor.style.display = 'none';
+          customCursor.classList.remove('hiding');
+          hideAnimationId = null;
+        }, 400);
+      }
+    }
+  }
+  
+  document.addEventListener('mousemove', function(e) {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    isMouseMoving = true;
+    updateForMouseMove(e);
+  });
+  
+  document.addEventListener('scroll', function() {
+    isMouseMoving = false;
+    updateForScroll();
+  });
+  
+  window.addEventListener('resize', function() {
+    if (isMouseMoving) {
+      updateForMouseMove({ clientX: lastX, clientY: lastY });
+    } else {
+      updateForScroll();
+    }
+  });
+});
+</script>
