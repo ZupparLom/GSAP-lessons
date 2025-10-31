@@ -1,0 +1,68 @@
+Карточки learn__card с атрибутами меняют свой размер при наведении заменяю освободившееся простраство 
+
+<style>
+/* Стили только для PC */
+@media (min-width: 992px) {
+    .learn__cards-wrap {
+        display: flex;
+        width: 100%;
+    }
+
+    .learn__card {
+        flex: 1; /* Все карточки равны по умолчанию */
+        transition: flex 0.4s ease-out;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .learn__card[card="1"] { flex: 2; } /* 50% */
+    .learn__card[card="2"] { flex: 1; } /* 25% */
+    .learn__card[card="3"] { flex: 1; } /* 25% */
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем разрешение при загрузке
+    if (window.innerWidth < 992) return;
+    
+    const cards = document.querySelectorAll('.learn__card');
+    const wrap = document.querySelector('.learn__cards-wrap');
+    let currentHovered = null;
+    
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            if (currentHovered === this) return;
+            currentHovered = this;
+            
+            cards.forEach(c => {
+                if (c === this) {
+                    c.style.flex = '2';
+                } else {
+                    c.style.flex = '1';
+                }
+            });
+        });
+    });
+    
+    wrap.addEventListener('mouseleave', function() {
+        if (!currentHovered) return;
+        currentHovered = null;
+        
+        cards.forEach(card => {
+            const attr = card.getAttribute('card');
+            card.style.flex = attr === '1' ? '2' : '1';
+        });
+    });
+    
+    // Также проверяем при изменении размера окна
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < 992) {
+            // На мобильных/планшетах сбрасываем все стили
+            cards.forEach(card => {
+                card.style.flex = '';
+            });
+        }
+    });
+});
+</script>
