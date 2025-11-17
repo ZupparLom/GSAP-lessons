@@ -1,0 +1,127 @@
+Простая фильтрация с возможностью увеличения фильтров. Элементы филтров и Item связаны атрибутами filtr = "all", filtr = "1", filtr = "2" и т.д.
+
+<style>
+/* Дополнительные стили для активного состояния фильтра */
+.catalog-cases__filtr-item--active {
+    /* Базовые стили уже применяются через JS */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterContainer = document.querySelector('.catalog-cases__filtr');
+    const filterItems = document.querySelectorAll('.catalog-cases__filtr-item');
+    const cases = document.querySelectorAll('.cases__item');
+    const totalCountEl = document.querySelector('.cases-number .text-block-wrap-div');
+    
+    // Сохраняем оригинальные display значения для каждого элемента
+    const originalDisplays = new Map();
+    cases.forEach(caseItem => {
+        originalDisplays.set(caseItem, window.getComputedStyle(caseItem).display);
+    });
+    
+    // CSS классы для активного состояния
+    const activeClass = 'catalog-cases__filtr-item--active';
+    
+    // Функция проверки видимости тега (упрощенная версия)
+    function isTagVisible(tag) {
+        // Простая проверка - если тег существует в DOM и не скрыт через display: none
+        return tag && tag.offsetParent !== null;
+    }
+    
+    // Функция для установки активного фильтра
+    function setActiveFilter(selectedFilter) {
+        filterItems.forEach(item => {
+            item.classList.remove(activeClass);
+            // Сбрасываем стили на стандартные
+            item.style.background = '';
+            item.style.color = '';
+        });
+        
+        // Применяем стили для активного элемента
+        selectedFilter.style.background = '#1C1C1C';
+        selectedFilter.style.color = '#FFFFFF';
+        selectedFilter.classList.add(activeClass);
+    }
+    
+    // Функция фильтрации кейсов
+    function filterCases(filterValue) {
+        console.log('=== FILTERING BY:', filterValue, '===');
+        
+        // Сначала показываем ВСЕ кейсы, чтобы правильно проверить видимость тегов
+        cases.forEach(caseItem => {
+            caseItem.style.display = originalDisplays.get(caseItem);
+        });
+        
+        // Принудительно пересчитываем layout
+        document.body.offsetHeight;
+        
+        cases.forEach((caseItem, caseIndex) => {
+            let shouldShow = false;
+            
+            if (filterValue === 'all') {
+                shouldShow = true;
+            } else {
+                // Ищем теги с соответствующим атрибутом filtr
+                const matchingTags = caseItem.querySelectorAll(`.cases__tag[filtr="${filterValue}"]`);
+                
+                console.log(`Case ${caseIndex}:`, {
+                    matchingTagsCount: matchingTags.length,
+                    shouldShow: matchingTags.length > 0
+                });
+                
+                // Простая проверка - если есть тег с нужным filtr, показываем кейс
+                shouldShow = matchingTags.length > 0;
+            }
+            
+            // Скрываем невидимые кейсы
+            if (!shouldShow) {
+                caseItem.style.display = 'none';
+            }
+        });
+        
+        // Обновляем нумерацию и общее количество
+        updateCaseNumbers();
+        updateTotalCount();
+    }
+    
+    // Функция обновления нумерации видимых кейсов
+    function updateCaseNumbers() {
+        let visibleIndex = 1;
+        cases.forEach(caseItem => {
+            const isVisible = caseItem.style.display !== 'none';
+            if (isVisible) {
+                visibleIndex++;
+            }
+        });
+    }
+    
+    // Функция обновления общего количества
+    function updateTotalCount() {
+        if (!totalCountEl) return;
+        const visibleCount = Array.from(cases).filter(c => c.style.display !== 'none').length;
+        totalCountEl.textContent = visibleCount.toString().padStart(2, '0');
+    }
+    
+    // Инициализация - устанавливаем активный фильтр "all" по умолчанию
+    const defaultFilter = document.querySelector('.catalog-cases__filtr-item[filtr="all"]');
+    if (defaultFilter) {
+        setActiveFilter(defaultFilter);
+        filterCases('all');
+    }
+    
+    // Обработчики событий для фильтров
+    filterItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const filterValue = this.getAttribute('filtr');
+            setActiveFilter(this);
+            filterCases(filterValue);
+        });
+    });
+    
+    // Первоначальное обновление счетчиков
+    updateCaseNumbers();
+    updateTotalCount();
+});
+</script>
