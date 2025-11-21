@@ -1,6 +1,7 @@
 GSAP анимация SplitText
 Текст, при попадании в экран, заполняется по буквенно из opacity и фильтр blur.  Текст с классом .blur_text, находится внутри div formular_head 
 
+
 <!--Подключить GSAP-->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
