@@ -4,6 +4,64 @@
 Добавляем код:
 
 <!--Добавление неразрывного пробела-->
+
+Вариант 1
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Список предлогов / союзов / частиц
+    const prepositions = [
+      "в", "без", "до", "из", "к", "по", "о", "от", "перед", "при", "через", "с",
+      "у", "за", "над", "об", "под", "про", "на",
+      "и", "а", "но", "да", "или", "либо", "то", "ни", "не", "же", "как"
+    ];
+
+    // Регэксп: начало строки или пробел + (одно из слов) + пробел(ы) + дальше что-то не-пробельное
+    const regex = new RegExp(`(^|\\s)(${prepositions.join("|")})(\\s+)(?=\\S)`, "gi");
+
+    // Обработка одного текстового узла
+    function processTextNode(node) {
+      const original = node.nodeValue;
+      const updated = original.replace(regex, function (match, before, word, spaces) {
+        // делаем: " в дом" → " в дом" (обычный пробел перед, неразрывный после короткого слова)
+        return before + word + "\u00A0";
+      });
+
+      if (updated !== original) {
+        node.nodeValue = updated;
+      }
+    }
+
+    // Рекурсивный обход DOM внутри элемента
+    function walk(node) {
+      // Текстовый узел
+      if (node.nodeType === Node.TEXT_NODE) {
+        processTextNode(node);
+        return;
+      }
+
+      // Не лезем в скрипты/стили
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const tag = node.tagName;
+        if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT") return;
+      } else {
+        return;
+      }
+
+      // Обрабатываем детей
+      node.childNodes.forEach(walk);
+    }
+
+    // Обрабатываем все элементы с нужным классом
+    document.querySelectorAll(".no-break-prepositions").forEach(function (el) {
+      walk(el);
+    });
+  });
+</script>
+
+
+
+Вариант2
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     // Функция для добавления неразрывных пробелов
