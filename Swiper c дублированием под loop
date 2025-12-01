@@ -1,0 +1,71 @@
+
+
+<!-- Слайдер Награды с дублированием под loop-->
+<script>
+// Функция: преобразует значение в rem → px
+function remToPx(rem) {
+  return Math.round(rem * parseFloat(getComputedStyle(document.documentElement).fontSize));
+}
+
+// Переменная для хранения экземпляра Swiper
+let swiperAward;
+
+// Функция дублирования слайдов для обеспечения плавного loop
+function ensureEnoughSlides(sliderSelector, minCount) {
+  const container = document.querySelector(sliderSelector + ' .swiper-wrapper');
+  if (!container) return;
+
+  const slides = Array.from(container.children).filter(el => el.classList.contains('swiper-slide'));
+  const originalCount = slides.length;
+
+  if (originalCount === 0 || originalCount >= minCount) return;
+
+  const needed = minCount - originalCount;
+  for (let i = 0; i < needed; i++) {
+    const clone = slides[i % originalCount].cloneNode(true);
+    container.appendChild(clone);
+  }
+}
+
+function initSwiper() {
+  // Удаляем предыдущий экземпляр
+  if (swiperAward) swiperAward.destroy(true, true);
+
+  // Определяем максимальное slidesPerView по брейкпойнтам
+  const breakpoints = {
+    320: { slidesPerView: 1.8, spaceBetween: remToPx(1) },
+    600: { slidesPerView: 2.7, spaceBetween: remToPx(1.4) },
+    992: { slidesPerView: 4, spaceBetween: remToPx(1.4) }
+  };
+
+  const maxSlidesPerView = Math.max(...Object.values(breakpoints).map(bp => bp.slidesPerView));
+  // Минимальное количество слайдов для loop сделаем в 2 раза больше maxSlidesPerView
+  const minSlidesCount = Math.ceil(maxSlidesPerView * 2);
+
+  // Создаем нужное количество слайдов
+  ensureEnoughSlides('.awwards-case__slider', minSlidesCount);
+
+  // Инициализируем Swiper
+  swiperAward = new Swiper('.awwards-case__slider.swiper', {
+    loop: true,
+    breakpoints,
+    navigation: {
+      nextEl: '.pag-btn--next-award',
+      prevEl: '.pag-btn--prev-award'
+    },
+    speed: 800,
+    grabCursor: true,
+    lazy: true,
+    resistanceRatio: 0.5,
+    centeredSlides: true
+  });
+}
+
+// Запускаем Swiper при загрузке страницы
+initSwiper();
+
+// Перезапускаем Swiper при изменении размеров окна
+window.addEventListener('resize', () => {
+  initSwiper();
+});
+</script>
