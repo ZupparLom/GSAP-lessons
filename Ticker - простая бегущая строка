@@ -1,7 +1,7 @@
 Бегущая строка (с настройкой скорости) для следующей структуры:
 catalog-ticker - catalog-ticker__list - catalog-ticker__item
 
-<script>
+script>
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.cover-ticker');
     const list = container?.querySelector('.catalog-ticker__list');
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==================== НАСТРОЙКИ ====================
-    const speed = 2; // скорость движения влево
+    const speed = 2; // скорость движения влево (пикселей за кадр)
     // ===================================================
 
     // Подготавливаем список
@@ -58,99 +58,136 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Переменные состояния
+    let setWidth = 0;
+    let pos = 0;
+    let animationFrameId = null;
+    let lastWindowWidth = window.innerWidth;
+    let lastWindowHeight = window.innerHeight;
+    
+    // Функция для точного расчета ширины одного набора
+    function calculateSetWidth() {
+        // Создаем временный контейнер с идентичными стилями
+        const tempContainer = document.createElement('div');
+        tempContainer.style.display = 'flex';
+        tempContainer.style.whiteSpace = 'nowrap';
+        tempContainer.style.visibility = 'hidden';
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        
+        // Копируем все relevant стили из основного списка
+        const listStyles = window.getComputedStyle(list);
+        tempContainer.style.gap = listStyles.gap;
+        tempContainer.style.flexWrap = listStyles.flexWrap;
+        tempContainer.style.alignItems = listStyles.alignItems;
+        tempContainer.style.justifyContent = listStyles.justifyContent;
+        
+        // Добавляем один набор ВАЛИДНЫХ элементов
+        originals.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.style.flexShrink = '0';
+            // Убедимся, что стили копируются правильно
+            clone.style.margin = window.getComputedStyle(item).margin;
+            clone.style.padding = window.getComputedStyle(item).padding;
+            tempContainer.appendChild(clone);
+        });
+        
+        document.body.appendChild(tempContainer);
+        
+        // Даем браузеру время на отрисовку
+        setTimeout(() => {
+            const newSetWidth = tempContainer.scrollWidth;
+            console.log('Calculated set width:', newSetWidth);
+            document.body.removeChild(tempContainer);
+            
+            // Сохраняем пропорциональную позицию при изменении ширины
+            if (setWidth > 0 && newSetWidth > 0) {
+                const scaleFactor = newSetWidth / setWidth;
+                pos = pos * scaleFactor;
+            }
+            
+            setWidth = newSetWidth;
+            
+            // Запускаем или продолжаем анимацию
+            if (!animationFrameId) {
+                startAnimation();
+            }
+        }, 10);
+    }
+
+    function startAnimation() {
+        // Проверяем, что ширина корректна
+        if (setWidth <= 0) {
+            console.error('Invalid set width calculated:', setWidth);
+            return;
+        }
+
+        function animate() {
+            pos -= speed;
+
+            // Когда проскролили один полный набор - сбрасываем позицию
+            if (Math.abs(pos) >= setWidth) {
+                pos += setWidth;
+                console.log('Cycle reset at position:', pos);
+            }
+
+            list.style.transform = `translateX(${pos}px)`;
+            list.style.transition = 'none';
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // Запускаем анимацию
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    // Улучшенный обработчик ресайза с фильтрацией ложных срабатываний
+    let resizeTimeout;
+    function handleResize() {
+        const currentWidth = window.innerWidth;
+        const currentHeight = window.innerHeight;
+        
+        // Определяем тип изменения размера
+        const widthChanged = Math.abs(currentWidth - lastWindowWidth) > 50;
+        const heightOnlyChange = Math.abs(currentWidth - lastWindowWidth) < 10 && 
+                                Math.abs(currentHeight - lastWindowHeight) > 50;
+        
+        // Игнорируем изменения только высоты (скрытие/появление адресной строки)
+        if (heightOnlyChange) {
+            lastWindowHeight = currentHeight;
+            return;
+        }
+        
+        // Пересчитываем только при значительном изменении ширины
+        if (widthChanged) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                console.log('Significant resize detected, recalculating...');
+                calculateSetWidth(); // Пересчитываем при ресайзе
+                lastWindowWidth = currentWidth;
+                lastWindowHeight = currentHeight;
+            }, 250);
+        }
+        
+        lastWindowWidth = currentWidth;
+        lastWindowHeight = currentHeight;
+    }
+
+    // Инициализация
     setTimeout(() => {
-        // Функция для точного расчета ширины одного набора
-        function calculateSetWidth() {
-            // Создаем временный контейнер с идентичными стилями
-            const tempContainer = document.createElement('div');
-            tempContainer.style.display = 'flex';
-            tempContainer.style.whiteSpace = 'nowrap';
-            tempContainer.style.visibility = 'hidden';
-            tempContainer.style.position = 'absolute';
-            tempContainer.style.left = '-9999px';
-            tempContainer.style.top = '-9999px';
-            
-            // Копируем все relevant стили из основного списка
-            const listStyles = window.getComputedStyle(list);
-            tempContainer.style.gap = listStyles.gap;
-            tempContainer.style.flexWrap = listStyles.flexWrap;
-            tempContainer.style.alignItems = listStyles.alignItems;
-            tempContainer.style.justifyContent = listStyles.justifyContent;
-            
-            // Добавляем один набор ВАЛИДНЫХ элементов
-            originals.forEach(item => {
-                const clone = item.cloneNode(true);
-                clone.style.flexShrink = '0';
-                // Убедимся, что стили копируются правильно
-                clone.style.margin = window.getComputedStyle(item).margin;
-                clone.style.padding = window.getComputedStyle(item).padding;
-                tempContainer.appendChild(clone);
-            });
-            
-            document.body.appendChild(tempContainer);
-            
-            // Даем браузеру время на отрисовку
-            setTimeout(() => {
-                const setWidth = tempContainer.scrollWidth;
-                console.log('Calculated set width:', setWidth);
-                document.body.removeChild(tempContainer);
-                
-                startAnimation(setWidth);
-            }, 10);
-        }
-
-        function startAnimation(setWidth) {
-            // Проверяем, что ширина корректна
-            if (setWidth <= 0) {
-                console.error('Invalid set width calculated:', setWidth);
-                return;
-            }
-
-            let pos = 0;
-            let animationFrameId;
-            
-            function animate() {
-                pos -= speed;
-
-                // Когда проскролили один полный набор - сбрасываем позицию
-                if (Math.abs(pos) >= setWidth) {
-                    pos += setWidth;
-                    console.log('Cycle reset at position:', pos);
-                }
-
-                list.style.transform = `translateX(${pos}px)`;
-                list.style.transition = 'none';
-
-                animationFrameId = requestAnimationFrame(animate);
-            }
-
-            // Запускаем анимацию
-            animate();
-
-            // Обработчик ресайза
-            let resizeTimeout;
-            function handleResize() {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    console.log('Window resized, recalculating...');
-                    calculateSetWidth(); // Пересчитываем при ресайзе
-                }, 250);
-            }
-
-            window.addEventListener('resize', handleResize);
-
-            // Функция для очистки
-            window.tickerCleanup = () => {
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                }
-                window.removeEventListener('resize', handleResize);
-            };
-        }
-
-        // Запускаем расчет ширины
+        lastWindowWidth = window.innerWidth;
+        lastWindowHeight = window.innerHeight;
         calculateSetWidth();
-
+        window.addEventListener('resize', handleResize);
     }, 100);
+
+    // Функция для очистки
+    window.tickerCleanup = () => {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+        window.removeEventListener('resize', handleResize);
+    };
 });
 </script>
