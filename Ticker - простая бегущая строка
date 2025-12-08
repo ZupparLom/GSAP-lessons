@@ -1,0 +1,156 @@
+Бегущая строка (с настройкой скорости) для следующей структуры:
+catalog-ticker - catalog-ticker__list - catalog-ticker__item
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.cover-ticker');
+    const list = container?.querySelector('.catalog-ticker__list');
+    
+    if (!list) {
+        console.warn('Ticker not found');
+        return;
+    }
+
+    // ==================== НАСТРОЙКИ ====================
+    const speed = 2; // скорость движения влево
+    // ===================================================
+
+    // Подготавливаем список
+    list.style.display = 'flex';
+    list.style.whiteSpace = 'nowrap';
+    list.style.willChange = 'transform';
+
+    // Сохраняем ТОЛЬКО элементы с содержимым
+    const originals = Array.from(list.querySelectorAll('.catalog-ticker__item'))
+        .filter(item => {
+            // Фильтруем пустые элементы (без изображений или с нулевой шириной)
+            const hasContent = item.querySelector('img') || item.textContent.trim() !== '';
+            if (!hasContent) {
+                console.log('Removing empty item:', item);
+            }
+            return hasContent;
+        });
+
+    const originalCount = originals.length;
+    
+    if (originalCount === 0) {
+        console.warn('No valid ticker items found');
+        return;
+    }
+
+    console.log('Valid items found:', originalCount);
+
+    // Очищаем список для перестройки
+    list.innerHTML = '';
+
+    // Восстанавливаем только валидные элементы
+    originals.forEach(item => {
+        item.style.flexShrink = '0';
+        list.appendChild(item);
+    });
+
+    // Создаем дополнительные копии для бесшовной анимации
+    for (let i = 0; i < 2; i++) {
+        originals.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.style.flexShrink = '0';
+            list.appendChild(clone);
+        });
+    }
+
+    setTimeout(() => {
+        // Функция для точного расчета ширины одного набора
+        function calculateSetWidth() {
+            // Создаем временный контейнер с идентичными стилями
+            const tempContainer = document.createElement('div');
+            tempContainer.style.display = 'flex';
+            tempContainer.style.whiteSpace = 'nowrap';
+            tempContainer.style.visibility = 'hidden';
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '-9999px';
+            
+            // Копируем все relevant стили из основного списка
+            const listStyles = window.getComputedStyle(list);
+            tempContainer.style.gap = listStyles.gap;
+            tempContainer.style.flexWrap = listStyles.flexWrap;
+            tempContainer.style.alignItems = listStyles.alignItems;
+            tempContainer.style.justifyContent = listStyles.justifyContent;
+            
+            // Добавляем один набор ВАЛИДНЫХ элементов
+            originals.forEach(item => {
+                const clone = item.cloneNode(true);
+                clone.style.flexShrink = '0';
+                // Убедимся, что стили копируются правильно
+                clone.style.margin = window.getComputedStyle(item).margin;
+                clone.style.padding = window.getComputedStyle(item).padding;
+                tempContainer.appendChild(clone);
+            });
+            
+            document.body.appendChild(tempContainer);
+            
+            // Даем браузеру время на отрисовку
+            setTimeout(() => {
+                const setWidth = tempContainer.scrollWidth;
+                console.log('Calculated set width:', setWidth);
+                document.body.removeChild(tempContainer);
+                
+                startAnimation(setWidth);
+            }, 10);
+        }
+
+        function startAnimation(setWidth) {
+            // Проверяем, что ширина корректна
+            if (setWidth <= 0) {
+                console.error('Invalid set width calculated:', setWidth);
+                return;
+            }
+
+            let pos = 0;
+            let animationFrameId;
+            
+            function animate() {
+                pos -= speed;
+
+                // Когда проскролили один полный набор - сбрасываем позицию
+                if (Math.abs(pos) >= setWidth) {
+                    pos += setWidth;
+                    console.log('Cycle reset at position:', pos);
+                }
+
+                list.style.transform = `translateX(${pos}px)`;
+                list.style.transition = 'none';
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            // Запускаем анимацию
+            animate();
+
+            // Обработчик ресайза
+            let resizeTimeout;
+            function handleResize() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    console.log('Window resized, recalculating...');
+                    calculateSetWidth(); // Пересчитываем при ресайзе
+                }, 250);
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            // Функция для очистки
+            window.tickerCleanup = () => {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                window.removeEventListener('resize', handleResize);
+            };
+        }
+
+        // Запускаем расчет ширины
+        calculateSetWidth();
+
+    }, 100);
+});
+</script>
