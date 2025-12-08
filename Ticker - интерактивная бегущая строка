@@ -1,0 +1,432 @@
+Бегущая строка с взоимодействем с мышкой. Перетаскивание в разные стороны и смена направлений 
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.cover-ticker');
+    const list = container?.querySelector('.catalog-ticker__list');
+
+    if (!list) {
+        console.warn('Ticker not found');
+        return;
+    }
+
+    // ==================== АДАПТИВНЫЕ НАСТРОЙКИ ====================
+    // Настройки для разных разрешений экрана
+    const settings = {
+        // Настройки для десктопных устройств (ширина >= 992px)
+        desktop: {
+            baseSpeed: 2,          // Базовая скорость движения в пикселях за кадр
+            friction: 1.1,         // Коэффициент трения при замедлении (значения >1 - ускорение)
+            maxVelocity: 8,        // Максимальная скорость при перетаскивании
+            smoothing: 0.3,        // Плавность движения при перетаскивании
+            pauseEasing: 0.2,      // Плавность остановки при паузе
+            accelTime: 300,        // Время ускорения после паузы (мс)
+            enablePause: false     // Включение паузы при наведении курсора
+        },
+        // Настройки для планшетов (ширина >= 480px)
+        tablet: {
+            baseSpeed: 1.5,        // Более низкая скорость для планшетов
+            friction: 0.94,        // Коэффициент трения (значения <1 - замедление)
+            maxVelocity: 8,        // Такая же максимальная скорость как на десктопе
+            smoothing: 0.3,        // Плавность перетаскивания
+            pauseEasing: 0.2,      // Плавность остановки
+            accelTime: 600,        // Более длинное время ускорения
+            enablePause: false     // Пауза при наведении отключена
+        },
+        // Настройки для мобильных устройств (ширина < 480px)
+        mobile: {
+            baseSpeed: 1,          // Самая низкая скорость для мобильных
+            friction: 1,           // Нейтральное трение
+            maxVelocity: 6,        // Ограниченная максимальная скорость
+            smoothing: 0.4,        // Более плавное перетаскивание
+            pauseEasing: 0.2,      // Плавность остановки
+            accelTime: 200,        // Быстрое ускорение
+            enablePause: false     // Пауза при наведении отключена
+        }
+    };
+    // ============================================================
+
+    // Подготовка списка - настройка базовых стилей
+    list.style.display = 'flex';
+    list.style.whiteSpace = 'nowrap';
+    list.style.willChange = 'transform'; // Оптимизация для анимации
+    list.style.cursor = 'grab';          // Курсор указывает на возможность перетаскивания
+    list.style.userSelect = 'none';      // Запрет выделения текста
+
+    // Состояние анимации и взаимодействия
+    let animationFrameId = null;     // ID текущего кадра анимации
+    let pos = 0;                     // Текущая позиция смещения в пикселях
+    let setWidth = 0;                // Ширина одного набора элементов
+    let velocity = 0;                // Текущая скорость движения
+    let direction = -1;              // Направление движения (-1 = влево, 1 = вправо)
+    let isPaused = false;            // Флаг паузы анимации
+    let isDragging = false;          // Флаг перетаскивания пользователем
+    let prevX = 0;                   // Предыдущая позиция X для мыши
+    let lastTime = 0;                // Время последнего кадра анимации
+    let accelStartTime = 0;          // Время начала ускорения
+    let currentSettings = settings.desktop; // Текущие настройки
+    let touchStartY = 0;             // Начальная позиция Y для touch-событий
+    let lastWindowWidth = window.innerWidth;  // Последняя запомненная ширина окна
+    let lastWindowHeight = window.innerHeight; // Последняя запомненная высота окна
+
+    // Определение текущих настроек на основе ширины окна
+    function getCurrentSettings() {
+        const width = window.innerWidth;
+        if (width >= 992) return settings.desktop;
+        if (width >= 480) return settings.tablet;
+        return settings.mobile;
+    }
+
+    // Нормализация позиции для создания эффекта бесконечной ленты
+    function normalizePosition() {
+        if (!setWidth) return;
+        // Сдвигаем позицию в допустимые границы
+        while (pos > 0) pos -= setWidth;
+        while (Math.abs(pos) > setWidth * 2) pos += setWidth;
+    }
+
+    // Сброс скорости движения
+    function resetVelocity() {
+        velocity = 0;
+    }
+
+    // Сохраняем оригинальные элементы и фильтруем пустые
+    const originals = Array.from(list.querySelectorAll('.catalog-ticker__item'))
+        .filter(item => {
+            const hasContent = item.querySelector('img') || item.textContent.trim() !== '';
+            return hasContent;
+        });
+
+    if (!originals.length) {
+        console.warn('No valid ticker items found');
+        return;
+    }
+
+    // Очищаем список и заполняем его элементами
+    list.innerHTML = '';
+    originals.forEach(item => {
+        item.style.flexShrink = '0'; // Запрет сжатия элементов
+        list.appendChild(item);
+    });
+    // Дублируем элементы для создания бесконечного эффекта
+    for (let i = 0; i < 4; i++) {
+        originals.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.style.flexShrink = '0';
+            list.appendChild(clone);
+        });
+    }
+
+    // Основная функция анимации
+    function animate(currentTime) {
+        if (isDragging) return; // Не анимируем во время перетаскивания
+
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.1); // Дельта времени
+        lastTime = currentTime;
+
+        const s = currentSettings;
+
+        if (!s.enablePause || !isPaused) {
+            // Автоматическое движение
+            if (Math.abs(velocity) < 0.1) {
+                velocity = 0;
+                pos += s.baseSpeed * direction;
+            }
+        } else {
+            // Замедление после перетаскивания или паузы
+            if (Math.abs(velocity) > 0.1) {
+                velocity *= s.friction;
+                pos += velocity * dt * 60;
+            }
+
+            if (isPaused) {
+                // Плавная остановка при паузе
+                velocity *= (1 - s.pauseEasing);
+            } else if (accelStartTime > 0) {
+                // Плавный разгон до базовой скорости
+                const elapsed = currentTime - accelStartTime;
+                const progress = Math.min(elapsed / s.accelTime, 1);
+                const targetSpeed = s.baseSpeed * direction * easeOutQuad(progress);
+                velocity = lerp(velocity, targetSpeed, 0.25);
+            }
+        }
+
+        normalizePosition();
+        list.style.transform = `translateX(${pos}px)`;
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    // Линейная интерполяция между двумя значениями
+    function lerp(a, b, t) {
+        return a * (1 - t) + b * t;
+    }
+
+    // Функция плавности ease-out quadratic
+    function easeOutQuad(t) {
+        return t * (2 - t);
+    }
+
+    // Расчёт ширины одного набора элементов (группы оригинальных элементов)
+    function calculateSetWidth(preservePosition = false) {
+        const temp = document.createElement('div');
+        Object.assign(temp.style, {
+            display: 'flex',
+            whiteSpace: 'nowrap',
+            visibility: 'hidden',
+            position: 'absolute',
+            left: '-9999px',
+            top: '-9999px'
+        });
+
+        // Копирование стилей оригинального списка
+        const listStyles = window.getComputedStyle(list);
+        Object.assign(temp.style, {
+            gap: listStyles.gap,
+            flexWrap: listStyles.flexWrap,
+            alignItems: listStyles.alignItems,
+            justifyContent: listStyles.justifyContent
+        });
+
+        // Клонирование элементов с сохранением стилей
+        originals.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.style.flexShrink = '0';
+            const cs = window.getComputedStyle(item);
+            clone.style.margin = cs.margin;
+            clone.style.padding = cs.padding;
+            temp.appendChild(clone);
+        });
+
+        document.body.appendChild(temp);
+
+        setTimeout(() => {
+            const newSetWidth = temp.scrollWidth;
+            document.body.removeChild(temp);
+
+            // Сохранение позиции при изменении ширины
+            if (preservePosition && setWidth && newSetWidth) {
+                const scaleFactor = newSetWidth / setWidth;
+                pos = pos * scaleFactor;
+                normalizePosition();
+            }
+
+            setWidth = newSetWidth;
+            currentSettings = getCurrentSettings();
+            
+            if (!isDragging) {
+                normalizePosition();
+                resetVelocity();
+                accelStartTime = performance.now();
+                lastTime = performance.now();
+                if (!animationFrameId) {
+                    animate(lastTime);
+                }
+            }
+        }, 10);
+    }
+
+    // Обработчики событий мыши для десктопных устройств
+
+    container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Только левая кнопка мыши
+
+        e.preventDefault();
+        isDragging = true;
+        isPaused = currentSettings.enablePause;
+        resetVelocity();
+        prevX = e.clientX;
+        lastTime = performance.now();
+        list.style.cursor = 'grabbing';
+        list.style.transition = 'none';
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    function onMouseMove(e) {
+        if (!isDragging) return;
+
+        const s = currentSettings;
+        const deltaX = e.clientX - prevX;
+        const dt = (performance.now() - lastTime) / 1000 || 0.016;
+
+        if (Math.abs(deltaX) > 5) {
+            direction = deltaX > 0 ? 1 : -1;
+        }
+
+        pos += deltaX * s.smoothing * 5;
+        velocity = (deltaX / dt) * 0.015;
+        velocity = Math.max(-s.maxVelocity, Math.min(s.maxVelocity, velocity));
+
+        prevX = e.clientX;
+        lastTime = performance.now();
+
+        normalizePosition();
+        list.style.transform = `translateX(${pos}px)`;
+    }
+
+    function onMouseUp() {
+        if (!isDragging) return;
+
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        list.style.cursor = 'grab';
+        currentSettings = getCurrentSettings();
+
+        resetVelocity();
+        isPaused = false;
+        accelStartTime = performance.now();
+        animate(performance.now());
+    }
+
+    // Обработчики touch-событий для мобильных устройств и планшетов
+    let touchPrevX = 0;
+
+    container.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        touchStartY = touch.clientY;
+        touchPrevX = touch.clientX;
+        lastTime = performance.now();
+
+        // Проверка начала горизонтального движения
+        document.addEventListener('touchmove', touchStartCheck, { passive: false });
+        document.addEventListener('touchend', touchStartCancel);
+    }, { passive: true });
+
+    // Проверка начала горизонтального свайпа
+    function touchStartCheck(e) {
+        const touch = e.touches[0];
+        const deltaY = Math.abs(touch.clientY - touchStartY);
+
+        // Игнорирование вертикального скролла
+        if (deltaY > 10) {
+            touchStartCancel();
+            return;
+        }
+
+        const deltaX = Math.abs(touch.clientX - touchPrevX);
+        if (deltaX > 5) {
+            // Начинаем полноценное перетаскивание
+            isDragging = true;
+            isPaused = currentSettings.enablePause;
+            resetVelocity();
+            list.style.transition = 'none';
+
+            document.removeEventListener('touchmove', touchStartCheck);
+            document.removeEventListener('touchend', touchStartCancel);
+
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+        }
+    }
+
+    function touchStartCancel() {
+        document.removeEventListener('touchmove', touchStartCheck);
+        document.removeEventListener('touchend', touchStartCancel);
+    }
+
+    function onTouchMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+
+        const touch = e.touches[0];
+        const s = currentSettings;
+        const deltaX = touch.clientX - touchPrevX;
+        const dt = (performance.now() - lastTime) / 1000 || 0.016;
+
+        if (Math.abs(deltaX) > 5) {
+            direction = deltaX > 0 ? 1 : -1;
+        }
+
+        pos += deltaX * s.smoothing * 5;
+        velocity = (deltaX / dt) * 0.015;
+        velocity = Math.max(-s.maxVelocity, Math.min(s.maxVelocity, velocity));
+
+        touchPrevX = touch.clientX;
+        lastTime = performance.now();
+
+        normalizePosition();
+        list.style.transform = `translateX(${pos}px)`;
+    }
+
+    function onTouchEnd() {
+        if (!isDragging) return;
+
+        isDragging = false;
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+
+        currentSettings = getCurrentSettings();
+        resetVelocity();
+        isPaused = false;
+        accelStartTime = performance.now();
+        animate(performance.now());
+    }
+
+    // Обработчики паузы при наведении (если включено в настройках)
+    container.addEventListener('mouseenter', () => {
+        const s = currentSettings;
+        if (s.enablePause) {
+            isPaused = true;
+            list.style.cursor = 'grab';
+            list.style.transition = 'none';
+        }
+    });
+
+    container.addEventListener('mouseleave', () => {
+        const s = currentSettings;
+        if (s.enablePause && !isDragging) {
+            isPaused = false;
+            resetVelocity();
+            accelStartTime = performance.now();
+            list.style.cursor = 'grab';
+        }
+    });
+
+    // Обработчик изменения размера окна с фильтрацией ложных срабатываний
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        const currentWidth = window.innerWidth;
+        const currentHeight = window.innerHeight;
+        
+        // Определение типа изменения размера
+        const widthChanged = Math.abs(currentWidth - lastWindowWidth) > 50;
+        const heightOnlyChange = Math.abs(currentWidth - lastWindowWidth) < 10 && 
+                                Math.abs(currentHeight - lastWindowHeight) > 50;
+        
+        // Игнорирование изменений только высоты (скрытие адресной строки)
+        if (heightOnlyChange) {
+            lastWindowHeight = currentHeight;
+            return;
+        }
+        
+        // Пересчет только при значительном изменении ширины
+        if (widthChanged) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                calculateSetWidth(true); // Сохранение позиции при пересчете
+                lastWindowWidth = currentWidth;
+                lastWindowHeight = currentHeight;
+            }, 250);
+        }
+        
+        lastWindowWidth = currentWidth;
+        lastWindowHeight = currentHeight;
+    });
+
+    // Функция очистки для предотвращения утечек памяти
+    window.tickerCleanup = () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+
+    // Инициализация тикера
+    setTimeout(() => {
+        lastWindowWidth = window.innerWidth;
+        lastWindowHeight = window.innerHeight;
+        currentSettings = getCurrentSettings();
+        calculateSetWidth();
+    }, 100);
+});
+</script>
