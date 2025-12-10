@@ -18,7 +18,84 @@
   });
 </script>
 
-Проигрывание при загрузке анимации в div .spheres с разделением на сафари плюс ios и другие браузеры плис android 
+Запуск анимации когда circle полностью в экране 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const container = document.querySelector('.circle');
+    if (!container) return;
+
+    // Проверка: Safari или iPhone/iPad
+    const ua = window.navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const useCanvas = isIOS || isSafari;
+
+    let animation = null;
+
+    // Функция проверки видимости элемента
+    function isElementFullyVisible(el) {
+      const rect = el.getBoundingClientRect();
+      const elemTop = rect.top;
+      const elemBottom = rect.bottom;
+      
+      // Элемент полностью в viewport
+      return elemTop >= 0 && elemBottom <= window.innerHeight;
+    }
+
+    // Функция запуска анимации
+    function playAnimation() {
+      if (animation) return; // Уже запущена
+
+      animation = lottie.loadAnimation({
+        container: container,
+        renderer: useCanvas ? 'canvas' : 'svg',
+        loop: false,
+        autoplay: true,
+        path: '/f/lotti1.json'
+      });
+    }
+
+    // Обработчик скролла
+    function handleScroll() {
+      if (isElementFullyVisible(container)) {
+        playAnimation();
+        // Удаляем обработчик после запуска, чтобы не проверять лишний раз
+        window.removeEventListener('scroll', handleScroll);
+        // Дополнительно убираем resize для оптимизации
+        window.removeEventListener('resize', handleScroll);
+      }
+    }
+
+    // Проверяем сразу при загрузке
+    if (isElementFullyVisible(container)) {
+      playAnimation();
+    } else {
+      // Добавляем обработчики событий
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleScroll, { passive: true });
+      
+      // Intersection Observer для лучшей производительности (современные браузеры)
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 1.0) {
+              playAnimation();
+              observer.disconnect();
+              window.removeEventListener('scroll', handleScroll);
+              window.removeEventListener('resize', handleScroll);
+            }
+          });
+        }, {
+          threshold: 1.0 // Требуем 100% видимости
+        });
+        
+        observer.observe(container);
+      }
+    }
+  });
+</script>
+
+Проигрывание при загрузке анимации в div .spheres с разделением на сафари плюс ios и другие браузеры плюс android 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const container = document.querySelector('.spheres');
