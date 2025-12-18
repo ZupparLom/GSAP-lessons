@@ -1,0 +1,194 @@
+Общее 
+
+
+<!-- CSS Fancybox -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css">
+<!-- jQuery + Fancybox JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+
+
+<script>
+  $(document).ready(function() {
+  // Перебираем все элементы с классом fancy-box
+  $('.fancy-box').each(function() {
+    // Ищем внутри текущего элемента тег img
+    const img = $(this).find('img');
+    
+    if (img.length) {
+      // Обернём img в ссылку <a>, если её нет (требуется для Fancybox)
+      if (!img.parent('a').length) {
+        img.wrap('<a href="' + img.attr('src') + '" data-fancybox="gallery"></a>');
+      }
+    }
+  });
+
+  // Инициализируем Fancybox для всех ссылок, созданных выше
+  $('[data-fancybox]').fancybox({
+    buttons: [
+      "zoom",
+      "share",
+      "slideShow",
+      "fullScreen",
+      "download",
+      "thumbs",
+      "close"
+    ]
+  });
+});
+</script>
+
+Fancybox c zoom со свайпер
+<!-- Для скроллбара, чтобы не пригал контент -->
+<style>
+  @media (min-width: 992px) {
+  html {
+    overflow-y: scroll; /* всегда резервируем место под скроллбар */
+  }
+}
+</style>
+
+<!-- CSS Fancybox -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css">
+<!-- jQuery + Fancybox JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let swiperIcluded = null
+    let resizeTimeout = null
+
+    function getSwiperConfig() {
+      const rootStyles = getComputedStyle(document.documentElement)
+
+      let spaceBetweenRem
+      if (window.innerWidth >= 992) {
+        spaceBetweenRem = 2
+      } else if (window.innerWidth >= 480) {
+        spaceBetweenRem = 2
+      } else {
+        spaceBetweenRem = 1
+      }
+
+      const fontSize = parseFloat(
+        getComputedStyle(document.documentElement).fontSize
+      )
+      const spaceBetween = spaceBetweenRem * fontSize
+
+      const swiperWrapper = document.querySelector(
+        "[swiper-service-included] .swiper-wrapper"
+      )
+      if (swiperWrapper) {
+        swiperWrapper.style.columnGap = "0"
+      }
+
+      const speedValue = rootStyles
+        .getPropertyValue("--animation-duration-medium")
+        .trim()
+      const speed = parseInt(speedValue)
+
+      const easingValue = rootStyles
+        .getPropertyValue("--animation-timing-function")
+        .trim()
+      const easing = easingValue.includes("cubic-bezier")
+        ? easingValue
+        : "cubic-bezier(0.25, 1, 0.5, 1)"
+
+      return { spaceBetween, speed, easing }
+    }
+
+    function initOrUpdateSwipers() {
+      const config = getSwiperConfig()
+
+      if (swiperIcluded) {
+        swiperIcluded.params.spaceBetween = config.spaceBetween
+        swiperIcluded.params.speed = config.speed
+        swiperIcluded.params.easing = config.easing
+        swiperIcluded.update()
+      } else {
+        swiperIcluded = new Swiper("[swiper-service-included]", {
+          speed: config.speed,
+          easing: config.easing,
+          spaceBetween: config.spaceBetween,
+          slidesPerView: 2,
+          grabCursor: true,
+          navigation: {
+            nextEl: "[swiper-service-included-next-mobile]",
+            prevEl: "[swiper-service-included-prev-mobile]",
+          },
+          breakpoints: {
+            0: {
+              slidesPerView: 1,
+            },
+            480: {
+              slidesPerView: 1.5,
+            },
+            992: {
+              slidesPerView: 2,
+              navigation: {
+                nextEl: "[swiper-service-included-next-desktop]",
+                prevEl: "[swiper-service-included-prev-desktop]",
+              },
+            },
+          },
+        })
+      }
+    }
+
+    function initFancyboxForCards() {
+      if (!window.jQuery || !jQuery.fancybox) return
+
+      jQuery(".card-img-text-5__img").each(function () {
+        const $container = jQuery(this)
+
+        let $img = $container.find("img").first()
+        if (!$img.length) return
+
+        let $link = $img.closest("a[data-fancybox]")
+        if (!$link.length) {
+          const src = $img.attr("src")
+          $link = jQuery('<a data-fancybox="services-included"></a>').attr(
+            "href",
+            src
+          )
+
+          $container.empty().append($link)
+          $link.append($img)
+        }
+
+        $img.css({
+          width: "100%",
+          display: "block",
+        })
+        $img.css("height", "")
+
+        $container.css({
+          width: "100%",
+        })
+      })
+
+      jQuery("[data-fancybox='services-included']").fancybox({
+        buttons: ["zoom", "close"],
+        hideScrollbar: false // не трогаем скроллбар и padding у body
+      })
+    }
+
+    function handleResize() {
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        initOrUpdateSwipers()
+      }, 250)
+    }
+
+    initOrUpdateSwipers()
+    initFancyboxForCards()
+
+    window.addEventListener("resize", handleResize)
+    window.addEventListener("load", function () {
+      initOrUpdateSwipers()
+      initFancyboxForCards()
+    })
+  })
+</script>
+
