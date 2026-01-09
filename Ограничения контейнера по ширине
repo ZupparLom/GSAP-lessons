@@ -39,3 +39,11 @@ https://wizardry-technique.webflow.io/
   @media screen and (max-width:480px) { html { font-size: 2.56vw; } }
   
 </style>
+
+Для некоторых текстовых элементов можно добавлять особое правило, через класс, по размеру шрифта на определённом диапазоне разрешений 
+/* Особое правило для footer__mail_link */
+  @media (min-width: 992px) and (max-width: 1439px) {
+    .t-footer__mail_link {
+        font-size: 21rem;
+    }
+  }
