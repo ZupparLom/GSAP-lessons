@@ -1,0 +1,68 @@
+Первый пункт меню с классом first активный по умолчанию. Активные пункты закрашиваются с лева на права и меняют цвет шрифта.
+При нажатии на др пуктн меняю он становиться активным, а прошлый активный возвращается в изначальное состояние в обратном порядке.
+При клике на актиный пункт стили не меняются 
+
+<script>
+const menuNav = document.querySelector('.menu__nav');
+let activeItem = null;
+const TRANSITION_DURATION = 0.3;
+const TRANSITION_EASING = 'ease';
+const ACTIVE_TEXT_COLOR = '#FFFFFF';
+const INACTIVE_TEXT_COLOR = '';
+
+function setTransitions(element) {
+  element.style.transition = `
+    width ${TRANSITION_DURATION}s ${TRANSITION_EASING},
+    color ${TRANSITION_DURATION}s ${TRANSITION_EASING}
+  `.trim();
+}
+
+function activateItem(item) {
+  const bkg = item.querySelector('.item-bkg--black');
+  const text = item.querySelector('.change-color');
+  if (bkg) {
+    setTransitions(bkg);
+    bkg.style.width = '100%';
+  }
+  if (text) {
+    setTransitions(text);
+    text.style.color = ACTIVE_TEXT_COLOR;
+  }
+}
+
+function deactivateItem(item) {
+  const bkg = item.querySelector('.item-bkg--black');
+  const text = item.querySelector('.change-color');
+  if (bkg) {
+    setTransitions(bkg);
+    bkg.style.width = '0%';
+  }
+  if (text) {
+    setTransitions(text);
+    text.style.color = INACTIVE_TEXT_COLOR;
+  }
+}
+
+if (menuNav) {
+  // Активация первого пункта с задержкой
+  setTimeout(function() {
+    const firstItem = menuNav.querySelector('.menu__nav-item.first');
+    if (firstItem) {
+      activateItem(firstItem);
+      activeItem = firstItem;
+    }
+  }, 0);
+
+  // Обработчик кликов
+  menuNav.addEventListener('click', function (event) {
+    const item = event.target.closest('.menu__nav-item');
+    if (!item || activeItem === item) return;
+
+    if (activeItem) {
+      deactivateItem(activeItem);
+    }
+    activateItem(item);
+    activeItem = item;
+  });
+}
+</script>
