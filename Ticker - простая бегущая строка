@@ -3,7 +3,7 @@ catalog-ticker - catalog-ticker__list - catalog-ticker__item
 
 script>
 document.addEventListener('DOMContentLoaded', () => {
-    const container = document.querySelector('.cover-ticker');
+    const container = document.querySelector('.catalog-ticker');
     const list = container?.querySelector('.catalog-ticker__list');
     
     if (!list) {
