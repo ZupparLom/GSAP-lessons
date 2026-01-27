@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==================== НАСТРОЙКИ ====================
-    const speed = 2; // скорость движения влево (пикселей за кадр)
+    const speed = 6; // скорость движения вправо (пикселей за кадр)
     // ===================================================
 
     // Подготавливаем список
@@ -43,20 +43,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Очищаем список для перестройки
     list.innerHTML = '';
 
-    // Восстанавливаем только валидные элементы
+    // Восстанавливаем только валидные элементы (с очисткой ID)
     originals.forEach(item => {
-        item.style.flexShrink = '0';
-        list.appendChild(item);
+        const cleanItem = item.cloneNode(true);
+        // Удаляем ID у клонированного элемента и его детей
+        cleanItem.removeAttribute('id');
+        cleanItem.querySelectorAll('[id]').forEach(child => child.removeAttribute('id'));
+        
+        cleanItem.style.flexShrink = '0';
+        list.appendChild(cleanItem);
     });
 
-    // Создаем дополнительные копии для бесшовной анимации
+    // Обновляем массив originals с очищенными элементами
+    const currentItems = Array.from(list.querySelectorAll('.catalog-ticker__item'));
+    
+    // Создаем дополнительные копии для бесшовной анимации (также очищаем ID)
     for (let i = 0; i < 2; i++) {
-        originals.forEach(item => {
+        currentItems.forEach(item => {
             const clone = item.cloneNode(true);
+            // Снова очищаем ID у клонов
+            clone.removeAttribute('id');
+            clone.querySelectorAll('[id]').forEach(child => child.removeAttribute('id'));
+            
             clone.style.flexShrink = '0';
             list.appendChild(clone);
         });
     }
+
+    console.log('Total items after cloning:', list.children.length);
 
     // Переменные состояния
     let setWidth = 0;
@@ -83,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tempContainer.style.alignItems = listStyles.alignItems;
         tempContainer.style.justifyContent = listStyles.justifyContent;
         
-        // Добавляем один набор ВАЛИДНЫХ элементов
-        originals.forEach(item => {
+        // Добавляем один набор оригинальных элементов (из currentItems)
+        currentItems.forEach(item => {
             const clone = item.cloneNode(true);
             clone.style.flexShrink = '0';
             // Убедимся, что стили копируются правильно
@@ -106,10 +120,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scaleFactor = newSetWidth / setWidth;
                 pos = pos * scaleFactor;
             }
-            
+
             setWidth = newSetWidth;
             
-            // Запускаем или продолжаем анимацию
+            // Для движения ВПРАВО: начинаем с левого края, чтобы элементы появлялись слева
+            if (speed > 0) {
+                pos = -setWidth; // Начинаем с отрицательной позиции
+                console.log('Right movement: starting at position', pos);
+            }
+            
+            // Запускаем анимацию
             if (!animationFrameId) {
                 startAnimation();
             }
@@ -124,12 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function animate() {
-            pos -= speed;
+            // Движение вправо: УВЕЛИЧИВАЕМ позицию
+            pos += speed;
 
-            // Когда проскролили один полный набор - сбрасываем позицию
-            if (Math.abs(pos) >= setWidth) {
-                pos += setWidth;
-                console.log('Cycle reset at position:', pos);
+            // Ключевое исправление для бесшовной анимации:
+            // При движении вправо, когда pos достигает 0 (все элементы сдвинулись вправо),
+            // нужно сбросить позицию обратно на -setWidth
+            if (speed > 0 && pos >= 0) {
+                pos = -setWidth;
+            }
+            
+            // Для движения влево (если speed отрицательный)
+            if (speed < 0 && pos <= -setWidth) {
+                pos = 0;
             }
 
             list.style.transform = `translateX(${pos}px)`;
@@ -142,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         animationFrameId = requestAnimationFrame(animate);
     }
 
-    // Улучшенный обработчик ресайза с фильтрацией ложных срабатываний
+    // Улучшенный обработчик ресайза
     let resizeTimeout;
     function handleResize() {
         const currentWidth = window.innerWidth;
@@ -153,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const heightOnlyChange = Math.abs(currentWidth - lastWindowWidth) < 10 && 
                                 Math.abs(currentHeight - lastWindowHeight) > 50;
         
-        // Игнорируем изменения только высоты (скрытие/появление адресной строки)
+        // Игнорируем изменения только высоты
         if (heightOnlyChange) {
             lastWindowHeight = currentHeight;
             return;
@@ -164,7 +191,14 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 console.log('Significant resize detected, recalculating...');
-                calculateSetWidth(); // Пересчитываем при ресайзе
+                
+                // Останавливаем текущую анимацию
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                
+                calculateSetWidth();
                 lastWindowWidth = currentWidth;
                 lastWindowHeight = currentHeight;
             }, 250);
@@ -186,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.tickerCleanup = () => {
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
         }
         window.removeEventListener('resize', handleResize);
     };
