@@ -1,0 +1,377 @@
+При наведении мышкой на элементы img-move они двигаются плавно по ее движению
+
+<script>
+class MouseMoveEffect {
+    constructor(options = {}) {
+        // ЕДИНОЕ МЕСТО ДЛЯ ВСЕХ НАСТРОЕК
+        this.settings = Object.assign({
+            selector: '.img-move',           // Класс элементов
+            smoothness: 0.1,                // Коэффициент сглаживания (0.01 - 1)
+            intensity: 1.2,                  // Интенсивность движения в rem 
+            breakpoint: 991,                 // Минимальная ширина для работы
+            resetOnLeave: true               // Сброс при уходе мыши
+        }, options);
+        
+        // Состояние
+        this.elements = [];
+        this.isEnabled = false;
+        this.animationId = null;
+        this.remValue = 10; //  1rem = 10px (по умолчанию)
+        
+        // Привязка контекста
+        this.onResize = this.onResize.bind(this);
+        this.animate = this.animate.bind(this);
+        
+        // Инициализация
+        this.init();
+    }
+    
+    /**
+     * Инициализация эффекта
+     */
+    init() {
+        // Получаем текущее значение rem в пикселях
+        this.updateRemValue();
+        
+        // Проверяем разрешение
+        this.checkBreakpoint();
+        
+        // Если не ПК - выходим
+        if (!this.isEnabled) return;
+        
+        // Находим элементы
+        this.elements = Array.from(document.querySelectorAll(this.settings.selector));
+        if (this.elements.length === 0) return;
+        
+        // Добавляем CSS стили
+        this.injectStyles();
+        
+        // Настраиваем элементы
+        this.setupElements();
+        
+        // Устанавливаем обработчики событий
+        this.bindEvents();
+        
+        // Запускаем анимацию
+        this.startAnimation();
+    }
+    
+    /**
+     * Получает текущее значение 1rem в пикселях
+     */
+    updateRemValue() {
+        // Для упрощения используем фиксированное значение 10px для 1rem
+        this.remValue = 10;
+    }
+    
+    remToPx(rem) {
+        return rem * this.remValue;
+    }
+    
+    /**
+     * Проверяем соответствие разрешению
+     */
+    checkBreakpoint() {
+        const width = window.innerWidth;
+        this.isEnabled = width >= this.settings.breakpoint;
+    }
+    
+    /**
+     * Вставляем необходимые стили
+     */
+    injectStyles() {
+        const styleId = 'mouse-move-effect-styles';
+        
+        // Удаляем старые стили если есть
+        const oldStyle = document.getElementById(styleId);
+        if (oldStyle) oldStyle.remove();
+        
+        // Создаем новые стили
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            .img-move {
+                will-change: transform;
+                transform-style: flat;
+                backface-visibility: hidden;
+                transition: transform 0.5s ease-out;
+            }
+            
+            .img-move.mouse-active {
+                transition: none;
+            }
+        `;
+        
+        document.head.appendChild(style);
+    }
+    
+    /**
+     * Настраиваем элементы
+     */
+    setupElements() {
+        this.elements.forEach(element => {
+            // Инициализируем данные элемента
+            element._mouseMove = {
+                isActive: false,
+                mouseX: 0,
+                mouseY: 0,
+                currentX: 0,
+                currentY: 0,
+                targetX: 0,
+                targetY: 0,
+                width: 0,
+                height: 0,
+                rect: null
+            };
+            
+            // Обработчики для каждого элемента
+            element.addEventListener('mouseenter', (e) => {
+                this.handleMouseEnter(element, e);
+            });
+            
+            element.addEventListener('mousemove', (e) => {
+                this.handleElementMouseMove(element, e);
+            });
+            
+            element.addEventListener('mouseleave', (e) => {
+                this.handleMouseLeave(element, e);
+            });
+        });
+    }
+    
+    /**
+     * Обработчик входа мыши на элемент
+     */
+    handleMouseEnter(element, e) {
+        if (!this.isEnabled) return;
+
+        const data = element._mouseMove;
+        data.isActive = true;
+        element.classList.add('mouse-active');
+        
+        // Получаем актуальные размеры и позицию
+        this.updateElementRect(element);
+        
+        // Сбрасываем позицию
+        data.currentX = 0;
+        data.currentY = 0;
+        data.targetX = 0;
+        data.targetY = 0;
+        
+        // Обновляем позицию мыши
+        this.updateMousePosition(element, e);
+    }
+    
+    /**
+     * Обработчик движения мыши на элементе
+     */
+    handleElementMouseMove(element, e) {
+        if (!this.isEnabled || !element._mouseMove.isActive) return;
+        
+        this.updateMousePosition(element, e);
+    }
+    
+    /**
+     * Обновляет позицию мыши относительно элемента
+     */
+    updateMousePosition(element, e) {
+        const data = element._mouseMove;
+        const rect = data.rect;
+        
+        if (!rect) return;
+        
+        // Позиция мыши относительно элемента
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Нормализованные координаты (-1 до 1)
+        const normalizedX = (mouseX / rect.width) * 2 - 1;
+        const normalizedY = (mouseY / rect.height) * 2 - 1;
+        
+        // Рассчитываем целевое смещение в rem, затем конвертируем в px
+        const intensityInPx = this.remToPx(this.settings.intensity);
+        data.targetX = normalizedX * intensityInPx;
+        data.targetY = normalizedY * intensityInPx;
+    }
+    
+    /**
+     * Обновляет размеры и позицию элемента
+     */
+    updateElementRect(element) {
+        const rect = element.getBoundingClientRect();
+        const data = element._mouseMove;
+        
+        data.rect = rect;
+        data.width = rect.width;
+        data.height = rect.height;
+    }
+    
+    /**
+     * Обработчик выхода мыши с элемента
+     */
+    handleMouseLeave(element, e) {
+        const data = element._mouseMove;
+        data.isActive = false;
+        element.classList.remove('mouse-active');
+        
+        if (this.settings.resetOnLeave) {
+            this.resetElement(element);
+        } else {
+            data.targetX = data.currentX;
+            data.targetY = data.currentY;
+        }
+    }
+    
+    /**
+     * Устанавливаем обработчики событий
+     */
+    bindEvents() {
+        window.addEventListener('resize', this.onResize);
+    }
+    
+    /**
+     * Обработчик изменения размера
+     */
+    onResize() {
+        const wasEnabled = this.isEnabled;
+        this.checkBreakpoint();
+        
+        if (wasEnabled !== this.isEnabled) {
+            if (this.isEnabled) {
+                this.setupElements();
+                this.bindEvents();
+                this.startAnimation();
+            } else {
+                this.stopAnimation();
+                this.resetAllElements();
+            }
+        } else if (this.isEnabled) {
+            this.elements.forEach(element => {
+                if (element._mouseMove.isActive) {
+                    this.updateElementRect(element);
+                }
+            });
+        }
+    }
+    
+    /**
+     * Запускаем анимацию
+     */
+    startAnimation() {
+        if (this.animationId || !this.isEnabled) return;
+        
+        const animate = () => {
+            this.animate();
+            this.animationId = requestAnimationFrame(animate);
+        };
+        
+        this.animationId = requestAnimationFrame(animate);
+    }
+    
+    /**
+     * Останавливаем анимацию
+     */
+    stopAnimation() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+    }
+    
+    /**
+     * Основной цикл анимации
+     */
+    animate() {
+        if (!this.isEnabled) return;
+        
+        this.elements.forEach(element => {
+            const data = element._mouseMove;
+            
+            if (!data.isActive) return;
+            
+            // Плавная интерполяция
+            data.currentX += (data.targetX - data.currentX) * this.settings.smoothness;
+
+            data.currentY += (data.targetY - data.currentY) * this.settings.smoothness;
+            
+            // Применяем трансформацию
+            element.style.transform = `translate3d(${data.currentX}px, ${data.currentY}px, 0)`;
+        });
+    }
+    
+    /**
+     * Сбрасываем элемент в исходное состояние
+     */
+    resetElement(element) {
+        const data = element._mouseMove;
+        data.targetX = 0;
+        data.targetY = 0;
+        
+        const reset = () => {
+            if (Math.abs(data.currentX) < 0.1 && Math.abs(data.currentY) < 0.1) {
+                data.currentX = 0;
+                data.currentY = 0;
+                element.style.transform = '';
+                return;
+            }
+            
+            data.currentX *= 0.7;
+            data.currentY *= 0.7;
+            
+            element.style.transform = `translate3d(${data.currentX}px, ${data.currentY}px, 0)`;
+            
+            requestAnimationFrame(reset);
+        };
+        
+        reset();
+    }
+    
+    /**
+     * Сбрасываем все элементы
+     */
+    resetAllElements() {
+        this.elements.forEach(element => {
+            const data = element._mouseMove;
+            data.isActive = false;
+            element.classList.remove('mouse-active');
+            element.style.transform = '';
+            data.currentX = 0;
+            data.currentY = 0;
+            data.targetX = 0;
+            data.targetY = 0;
+        });
+    }
+    
+    /**
+     * Обновляет настройки
+     */
+    updateSettings(newSettings) {
+        Object.assign(this.settings, newSettings);
+    }
+    
+    /**
+     * Уничтожаем эффект
+     */
+    destroy() {
+        this.stopAnimation();
+        this.resetAllElements();
+        
+        window.removeEventListener('resize', this.onResize);
+        
+        const style = document.getElementById('mouse-move-effect-styles');
+        if (style) style.remove();
+        
+        this.elements.forEach(element => {
+            if (element._mouseMove) {
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+            }
+        });
+        
+        this.elements = [];
+    }
+}
+
+// Инициализация с настройками по умолчанию
+window.mouseMoveEffect = new MouseMoveEffect();
+</script>
