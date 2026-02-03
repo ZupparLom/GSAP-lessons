@@ -1,3 +1,113 @@
+<!-- Подключение GSAP и ScrollTrigger -->
+<script src="/f/gsapmin.js"></script>
+<script src="/f/scrolltriggermin.js"></script>
+
+
+<!-- Подключение библиотеки Lottie -->
+<script src="/f/lottiemin.js"></script>
+
+
+<!-- Lottie about -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const triggerBlock = document.querySelector('.we-do'); // Блок, от которого считаем прокрутку
+    if (!triggerBlock) return;
+
+    // === Определение Safari или iOS ===
+    const ua = window.navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const useCanvas = isIOS || isSafari;
+
+    // === Плавность ===
+    const smoothFactor = 0.8;
+    let targetFrame = 0;
+    let currentFrame = 0;
+
+    let animation = null;
+    let container = null;
+    let updateFn = null;
+
+    // === Отдельные настройки для моб и десктоп ===
+    const config = {
+      desktop: {
+        selector: '.lotti-about',
+        start: -0.9,
+        end: 0.4,
+        path: '/f/22.json'
+      },
+      mobile: {
+        selector: '.lotti-about',
+        start: -0.1,
+        end: 0.3,
+        path: '/f/22.json'
+      }
+    };
+
+    function initAnimation() {
+      const isMobileScreen = window.innerWidth < 480;
+      const conf = isMobileScreen ? config.mobile : config.desktop;
+
+      container = document.querySelector(conf.selector);
+      if (!container) return;
+
+      // Удаляем старую анимацию
+      if (animation) {
+        animation.destroy();
+        animation = null;
+      }
+
+      // Загружаем новую анимацию
+      animation = lottie.loadAnimation({
+        container: container,
+        renderer: useCanvas ? 'canvas' : 'svg',
+        loop: false,
+        autoplay: false,
+        path: conf.path
+      });
+
+      animation.addEventListener('DOMLoaded', () => {
+        animation.goToAndStop(0, true);
+        smoothUpdate();
+        updateFn = () => updateTargetFrame(conf.start, conf.end);
+        window.addEventListener('scroll', updateFn);
+        updateFn(); // при загрузке
+      });
+    }
+
+    function updateTargetFrame(start, end) {
+      if (!animation || !animation.isLoaded) return;
+
+      const rect = triggerBlock.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const blockHeight = rect.height;
+      const blockTop = rect.top;
+      const totalScroll = windowHeight + blockHeight;
+      const scrolled = windowHeight - blockTop;
+
+      let progress = scrolled / totalScroll;
+      let range = end - start;
+      let relativeProgress = (progress - start) / range;
+
+      relativeProgress = Math.max(0, Math.min(1, relativeProgress));
+      targetFrame = relativeProgress * animation.totalFrames;
+    }
+
+    function smoothUpdate() {
+      currentFrame += (targetFrame - currentFrame) * smoothFactor;
+      if (animation) animation.goToAndStop(currentFrame, true);
+      requestAnimationFrame(smoothUpdate);
+    }
+
+    // Инициализация + пересоздание при ресайзе
+    initAnimation();
+    window.addEventListener('resize', () => {
+      initAnimation();
+    });
+  });
+</script>
+
+
 
 <!-- Подключение GSAP и ScrollTrigger -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
