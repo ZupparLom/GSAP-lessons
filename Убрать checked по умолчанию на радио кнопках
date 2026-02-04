@@ -1,0 +1,22 @@
+Убирает checked, который в ТТ по умолчанию есть, на радио кнопках.
+На блок Radio Group нужно добавить класс radio-group
+
+<!-- Убрать чек по умолчанию на радио кнопках -->
+<script>
+  // После загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+  // Найти все группы радиокнопок с классом radio-group
+  const radioGroups = document.querySelectorAll('.radio-group');
+  
+  radioGroups.forEach(group => {
+    // Найти все радиокнопки внутри группы
+    const radioButtons = group.querySelectorAll('input[type="radio"]');
+    
+    // Убрать атрибут checked у всех кнопок
+    radioButtons.forEach(radio => {
+      radio.removeAttribute('checked');
+      radio.checked = false;
+    });
+  });
+});
+</script>
