@@ -1,0 +1,292 @@
+Здесь кнока открыть модалку [trigger-form] так же и закрывает его когда оно отурытое 
+
+<!-- Для попап -->
+<style>
+  /* ============ Анимация ============ */
+  :root {
+    --animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); /*0.625, 0.05, 0, 1*/
+    --animation-duration-long: 0.6s; /* Переменная длительности */
+  }
+
+  /* ============ Классы состояний ============ */
+  /* 
+ * .is-none — полностью скрывает элемент (не занимает место в потоке документа)
+ */
+  .is-none {
+    display: none;
+  }
+
+  /* 
+ * .is-flex — делает элемент flex-контейнером, что позволяет легко выравнивать и управлять дочерними элементами.
+ */
+  .is-flex {
+    display: flex;
+  }
+
+  /* 
+ * .is-hidden — делает элемент невидимым, но он всё ещё занимает место в потоке.
+ * Используется для плавного появления/исчезновения (через opacity и visibility).
+ */
+  [modal__bkg] {
+    transition: opacity var(--animation-duration-long) var(--animation-timing-function),
+                visibility var(--animation-duration-long) var(--animation-timing-function);
+    /* visibility управляется классами */
+  }
+
+  .is-hidden {
+    opacity: 0;
+    visibility: hidden; 
+  }
+
+  /* 
+ * .is-visible — делает элемент видимым (для анимации появления).
+ */
+  .is-visible {
+    opacity: 1;
+    visibility: visible; 
+  }
+
+  /* 
+ * .is-fixed — фиксирует элемент относительно viewport (модальное окно не скроллится с контентом).
+ */
+  .is-fixed {
+    position: fixed;
+    height: 100dvh;
+  }
+  
+  /* 
+ * .is-overflow-hidden — запрещает прокрутку внутри элемента (например, body при открытом модальном окне).
+ */
+  .is-overflow-hidden {
+    overflow: hidden !important;
+  }
+
+  /* 
+ * .is-close и .is-open — для анимации боковой панели
+ */
+  [modal-form] {
+    transition: transform var(--animation-duration-long) var(--animation-timing-function);
+  }
+  
+  /* 
+ * .is-close — сдвигает элемент вправо на 100% своей ширины (для анимации "выезда справа").
+ */
+  .is-close {
+    transform: translateX(100%);
+  }
+
+  /* 
+ * .is-open — возвращает элемент в исходное положение (анимация "въезда").
+ */
+  .is-open {
+    transform: translateX(0);
+  }
+
+</style>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const html = document.documentElement;
+  const modal = document.querySelector("[modal]");
+  const formTriggers = document.querySelectorAll("[trigger-form]");
+
+  if (!modal) return;
+
+  const modalBackground = modal.querySelector("[modal__bkg]");
+  const modalFormContentWrapper = modal.querySelector("[modal-form]");
+  
+
+  // Проверяем наличие обязательных элементов
+  if (!modalBackground || !modalFormContentWrapper) {
+    console.warn("Modal background or form content wrapper not found");
+    return;
+  }
+
+  let isAnimating = false;
+  let isOpen = false;
+  let animationTimeout = null;
+
+  const durationStr = getComputedStyle(document.documentElement).getPropertyValue("--animation-duration-long").trim();
+  const durationMs = (function (v) {
+    if (!v) return 300;
+    if (v.endsWith("ms")) return parseFloat(v) || 300;
+    if (v.endsWith("s")) return (parseFloat(v) || 0.3) * 1000;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 300;
+  })(durationStr);
+
+  function clearAnimationTimeout() {
+    if (animationTimeout) {
+      clearTimeout(animationTimeout);
+      animationTimeout = null;
+    }
+  }
+
+  function modalClose() {
+    if (!isOpen || isAnimating) return;
+
+    isAnimating = true;
+    clearAnimationTimeout();
+
+    modalBackground.classList.replace("is-visible", "is-hidden");
+
+    if (modalFormContentWrapper) {
+      modalFormContentWrapper.classList.replace("is-open", "is-close");
+    }
+
+    html.classList.remove("is-overflow-hidden");
+
+    animationTimeout = setTimeout(() => {
+      modal.classList.replace("is-flex", "is-none");
+
+      if (modalFormContentWrapper) {
+        modalFormContentWrapper.classList.replace("is-flex", "is-none");
+      }
+
+      isAnimating = false;
+      isOpen = false;
+      animationTimeout = null;
+    }, durationMs);
+  }
+
+  function openModal() {
+    if (isOpen || isAnimating) return;
+
+    isAnimating = true;
+    clearAnimationTimeout();
+
+    html.classList.add("is-overflow-hidden");
+
+    // Показываем контейнер модалки
+    modal.classList.replace("is-none", "is-flex");
+
+    if (modalFormContentWrapper) {
+      // Сначала делаем элемент видимым во flow
+      modalFormContentWrapper.classList.replace("is-none", "is-flex");
+      modalFormContentWrapper.style.display = '';
+
+      // Force reflow
+      void modalFormContentWrapper.offsetWidth;
+
+      // Анимация в следующем кадре
+      requestAnimationFrame(() => {
+        modalBackground.classList.replace("is-hidden", "is-visible");
+
+        requestAnimationFrame(() => {
+          modalFormContentWrapper.classList.replace("is-close", "is-open");
+
+          animationTimeout = setTimeout(() => {
+            isAnimating = false;
+            isOpen = true;
+            animationTimeout = null;
+          }, durationMs);
+        });
+      });
+    } else {
+      animationTimeout = setTimeout(() => {
+        isAnimating = false;
+        isOpen = true;
+        animationTimeout = null;
+      }, durationMs);
+    }
+  }
+
+  // Функция переключения состояния модалки
+  function toggleModal() {
+    if (isAnimating) return; // Если идет анимация, не делаем ничего
+    
+    if (isOpen) {
+      modalClose();
+    } else {
+      openModal();
+    }
+  }
+
+  // Находим кнопку закрытия в форме
+  const modalFormCloseTrigger = modalFormContentWrapper ? modalFormContentWrapper.querySelector("[modal-close]") : null;
+  if (modalFormCloseTrigger) {
+    modalFormCloseTrigger.onclick = function (e) {
+      e.preventDefault();
+      modalClose();
+    };
+  }
+
+  // Обработка клика вне формы для закрытия
+  modal.addEventListener("click", function (e) {
+    // Проверяем, кликнули ли на фоновый элемент (modal__bkg)
+    if (e.target === modalBackground) {
+      modalClose();
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && (isOpen || isAnimating)) {
+      e.preventDefault();
+      modalClose();
+    }
+  });
+
+  // Инициализация модалки
+  function initModal() {
+    modal.classList.add("is-none", "is-fixed");
+    if (modalBackground) modalBackground.classList.add("is-hidden");
+    if (modalFormContentWrapper) {
+      modalFormContentWrapper.classList.add("is-close", "is-none");
+    }
+  }
+
+  initModal();
+
+  // Обработка триггеров открытия/закрытия формы
+  if (formTriggers.length && modalFormContentWrapper) {
+    formTriggers.forEach((trigger) => {
+      trigger.addEventListener("click", function (e) {
+        e.preventDefault();
+        
+        const modalMenu = document.querySelector("[modal-menu]");
+        const menuButtonClose = document.querySelector("[menu-close-trigger]");
+        
+        // Если есть активное меню, обрабатываем его сначала
+        if (modalMenu && modalMenu.classList.contains("is-active")) {
+          // Используем toggle вместо openModal
+          toggleModal();
+          
+          // Закрываем меню с задержкой
+          setTimeout(() => {
+            if (menuButtonClose) {
+              menuButtonClose.click();
+            } else {
+              modalMenu.classList.remove("is-active");
+              document.querySelector("html").classList.remove("is-overflow-hidden");
+            }
+          }, 800);
+        } else {
+          // Если меню нет, просто переключаем модалку
+          toggleModal();
+        }
+      });
+    });
+  }
+});
+</script>
+
+<!-- Убрать чек по умолчанию на радио кнопках -->
+<script>
+  // После загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+  // Найти все группы радиокнопок с классом radio-group
+  const radioGroups = document.querySelectorAll('.radio-group');
+  
+  radioGroups.forEach(group => {
+    // Найти все радиокнопки внутри группы
+    const radioButtons = group.querySelectorAll('input[type="radio"]');
+    
+    // Убрать атрибут checked у всех кнопок
+    radioButtons.forEach(radio => {
+      radio.removeAttribute('checked');
+      radio.checked = false;
+    });
+  });
+});
+</script>
