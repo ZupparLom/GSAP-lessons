@@ -1,0 +1,95 @@
+<!--В блоке с классом checkbox-filtr все чекбоксы активные и с последнего нельзя снять выбор  -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const filterBlocks = document.querySelectorAll('.checkbox-filtr');
+    
+    filterBlocks.forEach(block => {
+        const checkboxes = block.querySelectorAll('input[type="checkbox"]');
+        const totalCheckboxes = checkboxes.length;
+        
+        if (totalCheckboxes < 2) return;
+        
+        // Устанавливаем все чекбоксы в состояние checked по умолчанию
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+        });
+        
+        function updateCheckboxStates() {
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            
+            // Если остался только один выбранный чекбокс
+            if (checkedCount === 1) {
+                // Находим выбранный чекбокс и делаем его недоступным для снятия
+                Array.from(checkboxes).forEach(cb => {
+                    if (cb.checked) {
+                        cb.disabled = true;
+                    } else {
+                        cb.disabled = false;
+                    }
+                });
+            } else {
+                // Если выбрано больше одного - все доступны
+                Array.from(checkboxes).forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+        }
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateCheckboxStates);
+        });
+        
+        updateCheckboxStates();
+    });
+});
+</script>
+
+
+<!-- Орграничение на выбор последнего оставшегося чекбокса в блоке с классом checkbox-filtr -->
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Находим все блоки с классом checkbox-filtr
+    const filterBlocks = document.querySelectorAll('.checkbox-filtr');
+    
+    filterBlocks.forEach(block => {
+        // Находим все checkbox внутри текущего блока
+        const checkboxes = block.querySelectorAll('input[type="checkbox"]');
+        const totalCheckboxes = checkboxes.length;
+        
+        // Если в блоке меньше 2 чекбоксов, ограничение не нужно
+        if (totalCheckboxes < 2) return;
+        
+        // Функция проверки и установки ограничений
+        function updateCheckboxStates() {
+            // Считаем количество отмеченных чекбоксов
+            const checkedCheckboxes = Array.from(checkboxes).filter(cb => cb.checked);
+            const checkedCount = checkedCheckboxes.length;
+            
+            // Если остался только один неотмеченный чекбокс
+            if (checkedCount === totalCheckboxes - 1) {
+                // Находим все неотмеченные чекбоксы
+                const uncheckedCheckboxes = Array.from(checkboxes).filter(cb => !cb.checked);
+                
+                // Делаем оставшийся чекбокс недоступным для выбора
+                uncheckedCheckboxes.forEach(cb => {
+                    cb.disabled = true;
+                });
+            } else {
+                // Если не остался только один чекбокс - включаем все обратно
+                checkboxes.forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+        }
+        
+        // Добавляем обработчик события change ко всем чекбоксам
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateCheckboxStates);
+        });
+        
+        // Инициализируем состояние при загрузке
+        updateCheckboxStates();
+    });
+});
+</script>
