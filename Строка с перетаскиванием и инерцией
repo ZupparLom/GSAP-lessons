@@ -1,0 +1,207 @@
+<!-- Стили для line-marks -->
+<style>
+.line-marks__item-wrap {
+  display: flex !important;
+  justify-content: start !important;
+  flex-wrap: nowrap !important;
+  width: fit-content !important;  /* ← ключевое для paddings  */
+  
+}
+
+/* Стили для горизонтального скролла с захватом */
+.line-marks__container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  cursor: grab;
+  user-select: none; /* Запрет выделения при перетаскивании */
+}
+
+/* Скрываем скроллбар */
+.line-marks__container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Анимация при перетаскивании */
+.line-marks__container.grabbing {
+  cursor: grabbing;
+}
+</style>
+
+
+<!-- Marks line с инерцией -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.querySelector('.line-marks__container');
+  if (!container) return;
+  
+  // Работает только на экранах >=992px (ПК версия)
+  if (window.innerWidth < 992) return;
+  
+  // ========== НАСТРОЙКИ ==========
+  const SETTINGS = {
+    MIN_SPEED_TO_STOP: 0.85, // Скорость, при которой инерция останавливается
+    FRICTION: 0.95, // Сила замедления (0.9=быстро, 0.99=медленно)
+    MIN_SPEED_TO_CONTINUE: 0.2, // Скорость для продолжения анимации
+    INERTIA_MULTIPLIER: 10, // Чувствительность инерции (5-30)
+    MIN_SPEED_TO_START: 2, // Скорость для запуска инерции
+    CURSOR_GRAB: 'grab',
+    CURSOR_GRABBING: 'grabbing'
+  };
+  
+  let isDragging = false;
+  let startX, startScrollLeft;
+  let lastX, lastTime;
+  let velocity = 0;
+  let animationId = null;
+  let isTouch = false;
+  let touchStartY = 0;
+  
+  function animateInertia() {
+    if (Math.abs(velocity) < SETTINGS.MIN_SPEED_TO_STOP) {
+      velocity = 0;
+      cancelAnimationFrame(animationId);
+      return;
+    }
+    
+    container.scrollLeft -= velocity;
+    velocity *= SETTINGS.FRICTION;
+    
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    if (container.scrollLeft <= 0) {
+      container.scrollLeft = 0;
+      velocity = 0;
+    } else if (container.scrollLeft >= maxScroll) {
+      container.scrollLeft = maxScroll;
+      velocity = 0;
+    }
+    
+    if (Math.abs(velocity) >= SETTINGS.MIN_SPEED_TO_CONTINUE) {
+      animationId = requestAnimationFrame(animateInertia);
+    }
+  }
+
+  // Унифицированное получение clientX
+  function getClientX(e) {
+    if (e.touches && e.touches.length) {
+      return e.touches[0].clientX;
+    }
+    if (e.changedTouches && e.changedTouches.length) {
+      return e.changedTouches[0].clientX;
+    }
+    return e.clientX;
+  }
+
+  // НАЧАЛО ПЕРЕТАСКИВАНИЯ
+  function handlePointerDown(e) {
+    isTouch = e.type.startsWith('touch');
+    
+    // Для тача запомним точку по Y, чтобы отличать горизонтальный жест от вертикального скролла
+    if (isTouch && e.touches && e.touches.length) {
+      touchStartY = e.touches[0].clientY;
+    }
+
+    isDragging = true;
+    if (!isTouch) {
+      container.style.cursor = SETTINGS.CURSOR_GRABBING;
+    }
+    
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      velocity = 0;
+    }
+    
+    const x = getClientX(e);
+    startX = x;
+    startScrollLeft = container.scrollLeft;
+    lastX = x;
+    lastTime = Date.now();
+    
+    // Для тача важно явно запретить только если это горизонтальный жест, иначе оставляем вертикальный скролл
+    if (isTouch) {
+      e.preventDefault();
+    } else {
+      e.preventDefault();
+    }
+  }
+  
+  // ПРОЦЕСС ПЕРЕТАСКИВАНИЯ
+  function handlePointerMove(e) {
+    if (!isDragging) return;
+
+    // На таче проверим, не слишком ли большой вертикальный сдвиг — тогда отдадим управление скроллу страницы
+    if (isTouch && e.touches && e.touches.length) {
+      const currentY = e.touches[0].clientY;
+      const deltaY = Math.abs(currentY - touchStartY);
+      const deltaXAbs = Math.abs(getClientX(e) - startX);
+
+      // Если пользователь явно скроллит вертикально — выходим, не мешаем
+      if (deltaY > deltaXAbs) {
+        isDragging = false;
+        return;
+      }
+
+      // Иначе это горизонтальный жест — блокируем скролл страницы
+      e.preventDefault();
+    }
+
+    const currentX = getClientX(e);
+    const currentTime = Date.now();
+    
+    const dragDistance = currentX - startX;
+    container.scrollLeft = startScrollLeft - dragDistance;
+    
+    const deltaX = currentX - lastX;
+    const deltaTime = currentTime - lastTime;
+    
+    if (deltaTime > 0) {
+      velocity = (deltaX / deltaTime) * SETTINGS.INERTIA_MULTIPLIER;
+    }
+    
+    lastX = currentX;
+    lastTime = currentTime;
+  }
+  
+  // ОКОНЧАНИЕ ПЕРЕТАСКИВАНИЯ
+  function handlePointerUp() {
+    if (!isDragging) return;
+    
+    isDragging = false;
+    if (!isTouch) {
+      container.style.cursor = SETTINGS.CURSOR_GRAB;
+    }
+    
+    if (Math.abs(velocity) > SETTINGS.MIN_SPEED_TO_START) {
+      animationId = requestAnimationFrame(animateInertia);
+    } else {
+      velocity = 0;
+    }
+  }
+  
+  function handleMouseLeave() {
+    if (isDragging && !isTouch) {
+      isDragging = false;
+      container.style.cursor = SETTINGS.CURSOR_GRAB;
+      
+      if (Math.abs(velocity) > SETTINGS.MIN_SPEED_TO_START) {
+        animationId = requestAnimationFrame(animateInertia);
+      }
+    }
+  }
+  
+  // ИНИЦИАЛИЗАЦИЯ
+  
+  container.style.cursor = SETTINGS.CURSOR_GRAB;
+  
+  // Мышь
+  container.addEventListener('mousedown', handlePointerDown);
+  document.addEventListener('mousemove', handlePointerMove);
+  document.addEventListener('mouseup', handlePointerUp);
+  container.addEventListener('mouseleave', handleMouseLeave);
+  
+  // Тач (важно passive: false, чтобы работало preventDefault)
+  container.addEventListener('touchstart', handlePointerDown, { passive: false });
+  document.addEventListener('touchmove', handlePointerMove, { passive: false });
+  document.addEventListener('touchend', handlePointerUp);
+  document.addEventListener('touchcancel', handlePointerUp);
+});
+</script>
