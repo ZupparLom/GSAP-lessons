@@ -1,0 +1,156 @@
+Переключение тем
+
+<!-- Стили для плавности (CSS) -->
+<style>
+    /* Изначально переходы отключены, чтобы при загрузке тема вставала мгновенно */
+    
+    /* Когда JS добавит класс .transitions-enabled к html, включаем плавность с исключениями */
+html.transitions-enabled,
+html.transitions-enabled [data-tm2]:not([data-tm2="modal__bkg--tm2"]):not([data-tm2="modal__form--tm2"]) {
+  transition: background-color 0.4s ease,
+              color 0.4s ease,
+              border-color 0.4s ease,
+              fill 0.4s ease,
+              stroke 0.4s ease;
+}
+</style>
+
+<style>
+/* .is-tm2 .item-1col{ color: rgba(15, 15, 15, 1);} */
+</style>
+
+<!-- Скрипт переключения -->
+<script>
+(function() {
+    // ==========================================
+    // НАСТРОЙКИ (CONFIG)
+    // ==========================================
+    const CONFIG = {
+        triggerBtnClass: 'togle', // Класс кнопки
+        dataName: 'data-tm2',             // Атрибут с именем класса второй темы
+        htmlMarkerClass: 'is-tm2',        // Класс для тега html
+        cookieName: 'site_theme_mode'     // Имя cookie
+    };
+    // ==========================================
+
+    // --- Утилиты для Cookies ---
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i=0;i < ca.length;i++) {
+            let c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+    }
+
+    // --- Вспомогательная функция: Применить тему к конкретному элементу ---
+    function applyThemeToElement(el, isDark) {
+        const classNameToAdd = el.getAttribute(CONFIG.dataName);
+        if (classNameToAdd) {
+            if (isDark) {
+                el.classList.add(classNameToAdd);
+            } else {
+                el.classList.remove(classNameToAdd);
+            }
+        }
+    }
+
+    // --- Основная функция переключения (Core) ---
+    function toggleTheme(state) {
+        const html = document.documentElement;
+        
+        // 1. Меняем класс на html
+        if (state) {
+            html.classList.add(CONFIG.htmlMarkerClass);
+        } else {
+            html.classList.remove(CONFIG.htmlMarkerClass);
+        }
+
+        // 2. Ищем ВСЕ существующие элементы и обновляем их
+        const elements = document.querySelectorAll('[' + CONFIG.dataName + ']');
+        elements.forEach(el => applyThemeToElement(el, state));
+
+        // 3. Пишем в куки
+        setCookie(CONFIG.cookieName, state ? '1' : '0', 30);
+    }
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    
+    // Переменная состояния доступна всему скрипту
+    const cookieVal = getCookie(CONFIG.cookieName);
+    let isTheme2Active = (cookieVal === '1');
+
+    // 1. Сразу применяем к HTML (чтобы не моргало)
+    if (isTheme2Active) {
+        document.documentElement.classList.add(CONFIG.htmlMarkerClass);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // 2. Первичный проход по элементам
+        toggleTheme(isTheme2Active);
+
+        // Включаем анимацию с задержкой
+        setTimeout(() => {
+            document.documentElement.classList.add('transitions-enabled');
+        }, 100); 
+
+        // 3. Вешаем клик на кнопки
+        const buttons = document.querySelectorAll('.' + CONFIG.triggerBtnClass);
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                isTheme2Active = !isTheme2Active;
+                toggleTheme(isTheme2Active);
+            });
+        });
+
+        // ==========================================
+        // РЕШЕНИЕ ДЛЯ AJAX (MutationObserver)
+        // ==========================================
+        const observer = new MutationObserver((mutations) => {
+            // Если включена обычная тема, нам не нужно обрабатывать новые элементы,
+            // они и так грузятся "чистыми".
+            // Но если включена Тема 2, мы обязаны "покрасить" новые элементы.
+            if (!isTheme2Active) return;
+
+            mutations.forEach((mutation) => {
+                // Проверяем только добавленные узлы
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Это HTML элемент (не текст)
+                        
+                        // А. Проверяем сам новый элемент (вдруг это он имеет атрибут)
+                        if (node.hasAttribute(CONFIG.dataName)) {
+                            applyThemeToElement(node, true);
+                        }
+
+                        // Б. Ищем внутри нового элемента нужные блоки
+                        // (Taptop часто вставляет контейнер, а нужные блоки внутри него)
+                        const children = node.querySelectorAll('[' + CONFIG.dataName + ']');
+                        children.forEach(child => applyThemeToElement(child, true));
+                    }
+                });
+            });
+        });
+
+        // Начинаем следить за изменениями в body
+        observer.observe(document.body, {
+            childList: true, // Следить за добавлением детей
+            subtree: true    // Следить на любой глубине вложенности
+        });
+    });
+
+})();
+</script>
