@@ -1,0 +1,21 @@
+Подставляет в текст количество items в коллекции
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cases = document.querySelectorAll('.cases__item-num'); //класс Item коллекции  
+    const totalCountEls = document.querySelectorAll('.cases-trans'); // класс текста
+    
+    function updateTotalCount() {
+        if (totalCountEls && cases) {
+            const totalCount = cases.length;
+            // Обновляем все элементы с классом cases-trans
+            totalCountEls.forEach(el => {
+                el.textContent = totalCount.toString().padStart(2, '0');
+            });
+        }
+    }
+    
+    updateTotalCount();
+});
+  
+</script>
