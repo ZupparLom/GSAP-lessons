@@ -1,0 +1,148 @@
+Класс we-do - Триггер
+Класс lotti-about - embed со скриптом
+
+<!-- Подключение библиотеки Lottie -->
+<script src="/f/lottiemin.js"></script>
+
+
+<!-- Lottie about -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Блок-триггер
+  const triggerBlock = document.querySelector('.we-do');
+  if (!triggerBlock) return;
+
+  // Настройки Safari/iOS
+  const ua = navigator.userAgent;
+  const useCanvas = /iPhone|iPad|iPod|safari/i.test(ua) && !/chrome|android/i.test(ua);
+
+  // Плавность
+  const smoothFactor = 0.12;
+  let targetFrame = 0;
+  let currentFrame = 0;
+  let rafId = null;
+
+  let animation = null;
+  let container = null;
+  let scrollListener = null;
+  let resizeObserver = null;
+
+  const config = {
+    desktop: { selector: '.lotti-about', start: -0.95, end: 0.5, path: '/f/22_kopiya.json' },
+    mobile: { selector: '.lotti-about', start: -0.1, end: 0.3, path: '/f/22_kopiya.json' }
+  };
+
+  function destroy() {
+    if (animation) {
+      animation.destroy();
+      animation = null;
+    }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (scrollListener) {
+      window.removeEventListener('scroll', scrollListener, { passive: true });
+      scrollListener = null;
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+  }
+
+  function init() {
+    // Destroy old
+    destroy();
+
+    const isMobile = window.innerWidth < 480;
+    const conf = isMobile ? config.mobile : config.desktop;
+
+    container = document.querySelector(conf.selector);
+    if (!container) return;
+
+    // Lottie
+    animation = lottie.loadAnimation({
+      container,
+      renderer: useCanvas ? 'canvas' : 'svg',
+      loop: false,
+      autoplay: false,
+      path: conf.path
+    });
+
+    let blockTop = 0;
+    let blockHeight = 0;
+    let windowHeight = 0;
+
+    // ResizeObserver — только для геометрии!
+    resizeObserver = new ResizeObserver((entries) => {
+      const rect = triggerBlock.getBoundingClientRect();
+      blockTop = rect.top;
+      blockHeight = rect.height;
+      windowHeight = window.innerHeight;
+    });
+    resizeObserver.observe(triggerBlock);
+
+    // Первичный расчёт
+    blockTop = triggerBlock.getBoundingClientRect().top;
+    blockHeight = triggerBlock.height;
+    windowHeight = window.innerHeight;
+
+    function onScroll() {
+      // scrollTop — САМЫЙ БЫСТРЫЙ способ!
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Прогресс блока
+      const scrolled = windowHeight - (blockTop - scrollY);
+      const totalScroll = windowHeight + blockHeight;
+      let progress = scrolled / totalScroll;
+      
+      // Ограничиваем диапазон
+      const start = conf.start, end = conf.end;
+      let relativeProgress = Math.max(0, Math.min(1, (progress - start) / (end - start)));
+      
+      targetFrame = relativeProgress * animation.totalFrames;
+    }
+
+    // Scroll только для позиции!
+    scrollListener = onScroll;
+    window.addEventListener('scroll', scrollListener, { passive: true });
+
+    animation.addEventListener('DOMLoaded', () => {
+      animation.goToAndStop(0, true);
+      onScroll(); // initial
+      smoothLoop();
+    });
+  }
+
+  function smoothLoop() {
+    if (!animation?.isLoaded) {
+      rafId = requestAnimationFrame(smoothLoop);
+      return;
+    }
+
+    // Сглаживание
+    const diff = targetFrame - currentFrame;
+    if (Math.abs(diff) > 0.1) {
+      currentFrame += diff * smoothFactor;
+      animation.goToAndStop(Math.round(currentFrame), true);
+    }
+
+    rafId = requestAnimationFrame(smoothLoop);
+  }
+
+  // Запуск
+  init();
+
+  // Resize
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(init, 200);
+  });
+
+  // Cleanup
+  window.addEventListener('beforeunload', destroy);
+});
+</script>
+
