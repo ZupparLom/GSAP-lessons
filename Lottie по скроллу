@@ -1,0 +1,149 @@
+Класс we-do - триггер
+Класс lotti-about - embed с кодом
+
+<!-- Lottie about -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Блок-триггер
+  const triggerBlock = document.querySelector('.we-do');
+  if (!triggerBlock) return;
+
+  // Настройки Safari/iOS
+  const ua = navigator.userAgent;
+  const useCanvas = /iPhone|iPad|iPod|safari/i.test(ua) && !/chrome|android/i.test(ua);
+
+  // Плавность
+  const smoothFactor = 0.12;
+  let targetFrame = 0;
+  let currentFrame = 0;
+  let rafId = null;
+
+  let animation = null;
+  let container = null;
+  let scrollListener = null;
+  let resizeObserver = null;
+
+  const config = {
+    desktop: { selector: '.lotti-about', start: -0.95, end: 0.5, path: '/f/22_kopiya.json' },
+    mobile: { selector: '.lotti-about', start: -0.1, end: 0.3, path: '/f/22_kopiya.json' }
+  };
+
+  function destroy() {
+    if (animation) {
+      animation.destroy();
+      animation = null;
+    }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (scrollListener) {
+      window.removeEventListener('scroll', scrollListener, { passive: true });
+      scrollListener = null;
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+  }
+
+  function calculateBlockGeometry() {
+    const rect = triggerBlock.getBoundingClientRect();
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    return {
+      top: rect.top + scrollY, // абсолютная позиция от верха документа
+      height: rect.height,
+      windowHeight: window.innerHeight
+    };
+  }
+
+  function init() {
+    // Destroy old
+    destroy();
+
+    const isMobile = window.innerWidth < 480;
+    const conf = isMobile ? config.mobile : config.desktop;
+
+    container = document.querySelector(conf.selector);
+    if (!container) return;
+
+    // Lottie
+    animation = lottie.loadAnimation({
+      container,
+      renderer: useCanvas ? 'canvas' : 'svg',
+      loop: false,
+      autoplay: false,
+      path: conf.path
+    });
+
+    let blockGeometry = calculateBlockGeometry();
+
+    // ResizeObserver — обновляет геометрию блока
+    resizeObserver = new ResizeObserver(() => {
+      blockGeometry = calculateBlockGeometry();
+    });
+    resizeObserver.observe(triggerBlock);
+
+    function onScroll() {
+      blockGeometry = calculateBlockGeometry();
+      
+      // Точный расчёт прогресса с абсолютными координатами
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const scrolled = blockGeometry.windowHeight - (blockGeometry.top - scrollY);
+      const totalScroll = blockGeometry.windowHeight + blockGeometry.height;
+      let progress = scrolled / totalScroll;
+      
+      // Ограничиваем диапазон
+      const start = conf.start, end = conf.end;
+      let relativeProgress = Math.max(0, Math.min(1, (progress - start) / (end - start)));
+      
+      targetFrame = relativeProgress * animation.totalFrames;
+    }
+
+    // Scroll listener
+    scrollListener = onScroll;
+    window.addEventListener('scroll', scrollListener, { passive: true });
+
+    // Инициализация после загрузки Lottie
+    animation.addEventListener('DOMLoaded', () => {
+      // Ждём следующий тик для точного расчёта текущей позиции
+      requestAnimationFrame(() => {
+        onScroll(); // immediate calculation с актуальной позицией
+        animation.goToAndStop(Math.round(currentFrame), true);
+        smoothLoop();
+      });
+    });
+  }
+
+  function smoothLoop() {
+    if (!animation?.isLoaded) {
+      rafId = requestAnimationFrame(smoothLoop);
+      return;
+    }
+
+    // Сглаживание
+    const diff = targetFrame - currentFrame;
+    if (Math.abs(diff) > 0.1) {
+      currentFrame += diff * smoothFactor;
+      animation.goToAndStop(Math.round(currentFrame), true);
+    }
+
+    rafId = requestAnimationFrame(smoothLoop);
+  }
+
+  // Запуск
+  init();
+
+  // Resize с debounce
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(init, 200);
+  });
+
+  // Cleanup
+  window.addEventListener('beforeunload', destroy);
+});
+</script>
+
+
