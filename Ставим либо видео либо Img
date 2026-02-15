@@ -1,0 +1,65 @@
+
+        <!-- Превью изображение -->
+    <img class="video-preview-img" src="preview.jpg" 
+         style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+    
+    <!-- Видео -->
+    <video muted playsinline loop autoplay preload="auto"
+           style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+        <source src="https://illan.taptop.site/f/eee755fde405a930e7c7ffe9a923f5d6_1920.mp4" type="video/mp4">
+    </video>
+    
+<script>
+(function() {
+    const videoContainer = this.parentElement.closest('.pic-video__item-video');
+    if (!videoContainer) return;
+    
+    const video = videoContainer.querySelector('video');
+    const previewImg = videoContainer.querySelector('.video-preview-img'); // Превью изображение
+    
+    if (!video) return;
+    
+    // Критические атрибуты
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('autoplay', '');
+    
+    let isPlaying = false;
+    
+    // Принудительный запуск
+    setTimeout(() => {
+        video.play().then(() => {
+            isPlaying = true;
+            // Скрываем превью при запуске
+            if (previewImg) {
+                previewImg.style.opacity = '0';
+                previewImg.style.transition = 'opacity 0.3s ease';
+            }
+        }).catch(() => {
+            // Если autoplay заблокирован, показываем превью
+            if (previewImg) previewImg.style.opacity = '1';
+        });
+    }, 100);
+    
+    // События видео
+    video.addEventListener('play', () => {
+        isPlaying = true;
+        if (previewImg) {
+            previewImg.style.opacity = '0';
+        }
+    });
+    
+    video.addEventListener('pause', () => {
+        isPlaying = false;
+        if (previewImg) {
+            previewImg.style.opacity = '1';
+        }
+    });
+})();
+</script>
+
+
+
+
+
