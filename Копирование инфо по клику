@@ -1,0 +1,128 @@
+Копирование содержания элемента copy-mail при клике на него. 
+<script>
+  // Функция копирования с fallback (без изменений)
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            console.log('Скопировано через Clipboard API');
+        }).catch(function(err) {
+            console.error('Ошибка Clipboard API: ', err);
+            fallbackCopyTextToClipboard(text);
+        });
+    } else {
+        fallbackCopyTextToClipboard(text);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        console.log('Скопировано через execCommand');
+    } catch (err) {
+        console.error('Fallback ошибка: ', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+// Делегированный обработчик клика по .copy-mail
+document.addEventListener('click', function(event) {
+    // Проверяем клик именно по .copy-mail или его дочерним (span)
+    if (event.target.closest('.copy-mail')) {
+        // Блокируем переход по ссылке
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Получаем текст из span внутри .copy-mail
+        const copyElement = event.target.closest('.copy-mail');
+        const text = copyElement.querySelector('.text-block-wrap-div').textContent.trim();
+        
+        // Копируем
+        copyToClipboard(text);
+        
+        // Визуальная обратная связь на .copy-mail
+        copyElement.classList.add('copied');
+        setTimeout(() => copyElement.classList.remove('copied'), 1500);
+    }
+});
+
+</script>
+
+
+Копирование содержания элемента copy-mail при клике на copy-click
+<script>
+// Функция копирования с fallback (без изменений)
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            console.log('Скопировано через Clipboard API');
+        }).catch(function(err) {
+            console.error('Ошибка Clipboard API: ', err);
+            fallbackCopyTextToClipboard(text);
+        });
+    } else {
+        fallbackCopyTextToClipboard(text);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        console.log('Скопировано через execCommand');
+    } catch (err) {
+        console.error('Fallback ошибка: ', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+// Обработчик: при клике на .copy-click копирует текст из .copy-mail
+document.addEventListener('click', function(event) {
+    // Проверяем клик именно по .copy-click
+    if (!event.target.closest('.copy-click')) return;
+    
+    const clickElement = event.target.closest('.copy-click');
+    
+    // Ищем .copy-mail в том же блоке .item-list__3
+    const container = clickElement.closest('.item-list__3');
+    const copyMailElement = container ? container.querySelector('.copy-mail') : null;
+    
+    if (copyMailElement) {
+        // Получаем текст из span внутри .copy-mail
+        const textSpan = copyMailElement.querySelector('.text-block-wrap-div');
+        const text = textSpan ? textSpan.textContent.trim() : '';
+        
+        if (text) {
+            // Копируем текст из copy-mail
+            copyToClipboard(text);
+            
+            // Визуальная обратная связь на обоих элементах
+            clickElement.classList.add('copied');
+            copyMailElement.classList.add('copied');
+            
+            setTimeout(() => {
+                clickElement.classList.remove('copied');
+                copyMailElement.classList.remove('copied');
+            }, 1500);
+        }
+    } else {
+        console.warn('Элемент .copy-mail не найден в блоке');
+    }
+});
+</script>
