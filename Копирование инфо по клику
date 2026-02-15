@@ -56,7 +56,7 @@ document.addEventListener('click', function(event) {
 
 </script>
 
-
+Элементы находяться в div item-list__3
 Копирование содержания элемента copy-mail при клике на copy-click
 <script>
 // Функция копирования с fallback (без изменений)
