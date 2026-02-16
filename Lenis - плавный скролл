@@ -1,0 +1,76 @@
+
+<!-- Обязательные стили для Safari -->
+<style>
+  /* Базовые стили Lenis */
+  html.lenis {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto;
+  }
+
+  /* Стили только для десктопа (шире 992px) */
+  @media (min-width: 993px) {
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        position: relative; /* Нужно для корректного fixed */
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        height: 100%; /* Safari fix */
+      }
+
+      /* Контейнер для фиксированных элементов внутри Lenis */
+      .lenis.lenis-smooth [data-lenis-fixed] {
+        position: fixed;
+        -webkit-transform: translateZ(0); /* аппаратное ускорение */
+        transform: translateZ(0);
+        z-index: 1000;
+      }
+
+      /* Отдельный фикс для модальных окон */
+      .modal, [data-fixed] {
+        position: fixed !important;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
+    }
+  }
+  
+   /* Важно: отключаем нативный smooth scroll когда Lenis активен */
+  html.lenis {
+    scroll-behavior: auto !important;
+  }
+</style>
+
+<!-- Подключаем Lenis только если ширина экрана больше 992px -->
+<script>
+  if (window.innerWidth > 992) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/lenis@1.3.17/dist/lenis.min.js';
+    script.onload = () => {
+      // Сохраняем инстанс Lenis в глобальной переменной
+      window.lenis = new Lenis({
+        lerp: 0.086,
+        smoothWheel: true,
+        smoothTouch: false,
+        infinite: false,
+        // Важно: не перехватывать программный скролл
+        syncTouch: false,
+        syncTouchLerp: 0
+      });
+
+      // Цикл анимации
+      function raf(time) {
+        window.lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+
+      requestAnimationFrame(raf);
+      
+      // Добавляем класс для стилей
+      document.documentElement.classList.add('lenis', 'lenis-smooth');
+    };
+    document.head.appendChild(script);
+  }
+</script>
