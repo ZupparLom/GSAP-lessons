@@ -31,7 +31,7 @@ function initSwiper() {
       // Мобильные устройства
       320: {
         slidesPerView: 1,              // Показывать 1 слайд
-        spaceBetween: remToPx(1.5),      // Отступ между слайдами = 2rem (в пикселях)
+        spaceBetween: remToPx(2),      // Отступ между слайдами = 2rem (в пикселях)
       },
       // Планшеты
       768: {
