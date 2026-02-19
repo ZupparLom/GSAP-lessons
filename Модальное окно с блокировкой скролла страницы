@@ -1,0 +1,302 @@
+<!-- Для попап -->
+<style>
+/* ============ Анимация ============ */
+:root {
+  --animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  --animation-duration-long: 0.6s;
+}
+
+/* ============ Классы состояний ============ */
+.is-none {
+  display: none;
+}
+
+.is-flex {
+  display: flex;
+}
+
+.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.is-fixed {
+  position: fixed;
+  height: 100dvh;
+}
+
+.is-overflow-hidden {
+  overflow: hidden !important;
+}
+
+[modal__bkg] {
+  transition: opacity var(--animation-duration-long) var(--animation-timing-function), visibility var(--animation-duration-long) var(--animation-timing-function);
+}
+
+[modal-form] {
+  transition: transform var(--animation-duration-long) var(--animation-timing-function);
+}
+
+.is-close {
+  transform: translateX(100%);
+}
+
+.is-open {
+  transform: translateX(0);
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const html = document.documentElement;
+  const modal = document.querySelector("[modal]");
+  const formTriggers = document.querySelectorAll("[trigger-form]");
+  
+  if (!modal) return;
+  
+  const modalBackground = modal.querySelector("[modal__bkg]");
+  const modalFormContentWrapper = modal.querySelector("[modal-form]");
+  const modalInner = modal.querySelector("[modal-inner]");
+  const crossElement = document.querySelector(".cross");
+  
+  if (!modalBackground || !modalFormContentWrapper || !modalInner) {
+    console.warn("Modal elements not found");
+    return;
+  }
+  
+  let isAnimating = false;
+  let isOpen = false;
+  let animationTimeout = null;
+  let touchStartY = 0;
+  let isScrollingInsideModal = false;
+  
+  const modalDurationStr = getComputedStyle(document.documentElement).getPropertyValue("--animation-duration-long").trim();
+  const modalDurationMs = (function (v) {
+    if (!v) return 300;
+    if (v.endsWith("ms")) return parseFloat(v) || 300;
+    if (v.endsWith("s")) return (parseFloat(v) || 0.3) * 1000;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 300;
+  })(modalDurationStr);
+  
+  const crossDuration = 300;
+  const crossEasing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+  
+  function updateCrossOpacity(opacity, immediate = false) {
+    if (!crossElement) return;
+    
+    if (immediate) {
+      crossElement.style.transition = 'none';
+      crossElement.style.opacity = opacity;
+      requestAnimationFrame(() => {
+        crossElement.style.transition = `opacity ${crossDuration}ms ${crossEasing}`;
+      });
+    } else {
+      crossElement.style.transition = `opacity ${crossDuration}ms ${crossEasing}`;
+      crossElement.style.opacity = opacity;
+    }
+  }
+  
+  function clearAnimationTimeout() {
+    if (animationTimeout) {
+      clearTimeout(animationTimeout);
+      animationTimeout = null;
+    }
+  }
+  
+  function updateBodyPointerEvents(open) {
+    if (open) {
+      document.body.style.pointerEvents = 'none';
+      modal.style.pointerEvents = 'auto';
+    } else {
+      document.body.style.pointerEvents = '';
+      modal.style.pointerEvents = '';
+    }
+  }
+  
+  function modalClose() {
+    if (!isOpen || isAnimating) return;
+    
+    isAnimating = true;
+    clearAnimationTimeout();
+    
+    modalBackground.classList.replace("is-visible", "is-hidden");
+    if (modalFormContentWrapper) {
+      modalFormContentWrapper.classList.replace("is-open", "is-close");
+    }
+    
+    updateCrossOpacity('0');
+    html.classList.remove("is-overflow-hidden");
+    updateBodyPointerEvents(false);
+    
+    animationTimeout = setTimeout(() => {
+      modal.classList.replace("is-flex", "is-none");
+      if (modalFormContentWrapper) {
+        modalFormContentWrapper.classList.replace("is-flex", "is-none");
+      }
+      isAnimating = false;
+      isOpen = false;
+      animationTimeout = null;
+    }, modalDurationMs);
+  }
+  
+  function openModal() {
+    if (isOpen || isAnimating) return;
+    
+    isAnimating = true;
+    clearAnimationTimeout();
+    
+    html.classList.add("is-overflow-hidden");
+    updateBodyPointerEvents(true);
+    
+    modal.classList.replace("is-none", "is-flex");
+    updateCrossOpacity('1');
+    
+    if (modalFormContentWrapper) {
+      modalFormContentWrapper.classList.replace("is-none", "is-flex");
+      modalFormContentWrapper.style.display = '';
+      void modalFormContentWrapper.offsetWidth;
+      
+      requestAnimationFrame(() => {
+        modalBackground.classList.replace("is-hidden", "is-visible");
+        requestAnimationFrame(() => {
+          modalFormContentWrapper.classList.replace("is-close", "is-open");
+          animationTimeout = setTimeout(() => {
+            isAnimating = false;
+            isOpen = true;
+            animationTimeout = null;
+          }, modalDurationMs);
+        });
+      });
+    } else {
+      animationTimeout = setTimeout(() => {
+        isAnimating = false;
+        isOpen = true;
+        animationTimeout = null;
+      }, modalDurationMs);
+    }
+  }
+  
+  function toggleModal() {
+    if (isAnimating) return;
+    if (isOpen) {
+      modalClose();
+    } else {
+      openModal();
+    }
+  }
+  
+  // ИСПРАВЛЕННАЯ прокрутка БЕЗ ОШИБОК
+  function handleTouchStart(e) {
+    touchStartY = e.touches[0].clientY;
+    isScrollingInsideModal = false;
+  }
+  
+  function handleTouchMove(e) {
+    if (!isOpen) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartY;
+    
+    const scrollTop = modalInner.scrollTop;
+    const scrollHeight = modalInner.scrollHeight;
+    const clientHeight = modalInner.clientHeight;
+    
+    const atTop = scrollTop <= 1;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+    
+    if (!atTop && !atBottom) {
+      isScrollingInsideModal = true;
+      return;
+    }
+    
+    if (Math.abs(deltaY) > 5 && !isScrollingInsideModal) {
+      e.preventDefault();
+    }
+  }
+  
+  function handleTouchEnd(e) {
+    isScrollingInsideModal = false;
+    touchStartY = 0;
+  }
+  
+  // Обработчики событий прокрутки
+  modalInner.addEventListener('wheel', function(e) {
+    e.stopPropagation();
+  }, { passive: false });
+  
+  modalInner.addEventListener('touchstart', handleTouchStart, { passive: true });
+  modalInner.addEventListener('touchmove', handleTouchMove, { passive: true });
+  modalInner.addEventListener('touchend', handleTouchEnd, { passive: true });
+  
+  modalBackground.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+  
+  // Обработчики закрытия
+  const modalFormCloseTrigger = modalFormContentWrapper ? modalFormContentWrapper.querySelector("[modal-close]") : null;
+  if (modalFormCloseTrigger) {
+    modalFormCloseTrigger.onclick = function (e) {
+      e.preventDefault();
+      modalClose();
+    };
+  }
+  
+  modal.addEventListener("click", function (e) {
+    if (e.target === modalBackground) {
+      modalClose();
+    }
+  });
+  
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && (isOpen || isAnimating)) {
+      e.preventDefault();
+      modalClose();
+    }
+  });
+  
+  // Инициализация
+  function initModal() {
+    modal.classList.add("is-none", "is-fixed");
+    if (modalBackground) modalBackground.classList.add("is-hidden");
+    if (modalFormContentWrapper) {
+      modalFormContentWrapper.classList.add("is-close", "is-none");
+    }
+    if (crossElement) {
+      updateCrossOpacity('0', true);
+    }
+  }
+  
+  initModal();
+  
+  // Триггеры открытия
+  if (formTriggers.length && modalFormContentWrapper) {
+    formTriggers.forEach((trigger) => {
+      trigger.addEventListener("click", function (e) {
+        e.preventDefault();
+        const modalMenu = document.querySelector("[modal-menu]");
+        const menuButtonClose = document.querySelector("[menu-close-trigger]");
+        
+        if (modalMenu && modalMenu.classList.contains("is-active")) {
+          toggleModal();
+          setTimeout(() => {
+            if (menuButtonClose) {
+              menuButtonClose.click();
+            } else {
+              modalMenu.classList.remove("is-active");
+              document.querySelector("html").classList.remove("is-overflow-hidden");
+            }
+          }, 800);
+        } else {
+          toggleModal();
+        }
+      });
+    });
+  }
+});
+</script>
