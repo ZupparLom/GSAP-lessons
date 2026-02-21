@@ -1,0 +1,63 @@
+
+<!-- Имитация скроллбара при открытии попапов (только для ПК ≥992px) -->
+<script>
+  const body = document.body;
+  const modals = document.querySelectorAll('.pop-up__order, .pop-up__slider-item');
+  
+  // Проверяем, является ли текущее разрешение ПК
+  function isDesktop() {
+    return window.innerWidth >= 992;
+  }
+
+  function updateBodyScrollLock() {
+    // Работает ТОЛЬКО для ПК
+    if (!isDesktop()) {
+      // Сбрасываем стили для мобильных
+      body.style.paddingRight = '';
+      body.style.overflow = '';
+      return;
+    }
+
+    // Проверяем, открыт ли хоть один попап
+    let anyOpen = false;
+    modals.forEach(m => {
+      const display = window.getComputedStyle(m).display;
+      if (display === 'flex' || display === 'block') {
+        anyOpen = true;
+      }
+    });
+
+    if (anyOpen) {
+      body.style.paddingRight = '8px';
+      body.style.overflow = 'hidden';
+    } else {
+      body.style.paddingRight = '';
+      body.style.overflow = '';
+    }
+  }
+
+  // Обработчик изменения размера окна
+  function handleResize() {
+    updateBodyScrollLock();
+  }
+
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.attributeName === 'style') {
+        updateBodyScrollLock();
+      }
+    });
+  });
+
+  // Навешиваем наблюдатель на все попапы
+  modals.forEach(modal => {
+    observer.observe(modal, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+  });
+
+  // Проверяем при загрузке и изменении размера
+  updateBodyScrollLock();
+  window.addEventListener('resize', handleResize);
+</script>
