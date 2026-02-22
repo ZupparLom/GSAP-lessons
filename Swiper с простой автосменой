@@ -1,0 +1,86 @@
+
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+Часто нужно прописывать стили для слайдера или слайдов
+<style>
+  /* Задаем стили для слайдера */
+  .gallery__slider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+
+</style>
+
+<!-- Инициализация -->
+<script>
+// Функция: преобразует значение в rem → px
+function remToPx(rem) {
+  return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
+// Переменная для хранения экземпляра Swiper
+let swiperGal;
+
+// Функция для инициализации Swiper с адаптивными отступами
+function initSwiper() {
+  // Если уже существует экземпляр Swiper — удаляем его (иначе будет дублироваться)
+  if (swiperGal) swiperGal.destroy(true, true);
+
+  // Создание нового экземпляра Swiper
+  swiperGal = new Swiper('.gallery__slider.swiper', {
+    loop: true,
+
+    // Включаем fade вместо slide
+    effect: 'fade',
+    fadeEffect: {
+      crossFade: false,
+    },
+
+    autoplay: {
+      delay: 500,
+      disableOnInteraction: false,
+      pauseOnMouseEnter: false,
+    },
+
+    // Отключаем любое ручное управление слайдером
+    allowTouchMove: false,  // Запрещает перетаскивание пальцем и мышью
+    simulateTouch: false,   // Отключает симуляцию тач-событий через мышь
+
+    breakpoints: {
+      320: {
+        slidesPerView: 1,
+        spaceBetween: remToPx(0),
+      },
+      768: {
+        slidesPerView: 1,
+        spaceBetween: remToPx(0),
+      },
+      992: {
+        slidesPerView: 1,
+        spaceBetween: remToPx(0),
+      },
+    },
+
+    speed: 50,
+    grabCursor: false,
+    lazy: true,
+    centeredSlides: false,
+  });
+}
+
+// Запускаем Swiper при загрузке страницы
+initSwiper();
+
+// Перезапускаем Swiper при изменении размеров окна
+window.addEventListener('resize', () => {
+  initSwiper();
+});
+</script>
