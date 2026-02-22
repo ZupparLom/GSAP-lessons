@@ -1,0 +1,32 @@
+<!-- Отменяем возможность вертуальное перетаскивания img -->
+
+<style>
+  img {
+  /* Запрещаем выделение картинки как текста */
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+
+  /* Отключаем перетаскивание для браузеров на базе WebKit (Chrome, Safari) */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+</style>
+
+<script>
+  // Находим все картинки на странице
+const allImages = document.querySelectorAll('img');
+
+// Перебираем каждую картинку и жестко отключаем событие начала перетаскивания
+allImages.forEach(function(img) {
+  img.addEventListener('dragstart', function(event) {
+    event.preventDefault(); // Отменяет появление "призрака" и перечеркнутого кружка
+  });
+});
+
+</script>
