@@ -112,31 +112,26 @@
 
 ========================================================================================================
 Закгрузка ролика чуть медленее
-<!-- Убрали прямую ссылку на скрипт! Он загрузится только когда будет нужно -->
+<!-- Убрали прямую ссылку на скрипт! Он загрузится только когда будет нужно / добавили паузу при клике-->
 <script>
-  // 1. Очищаем iframe и добавляем ленивую загрузку СРАЗУ, до рендера страницы
+  // 1. Очищаем iframe и добавляем ленивую загрузку
   document.addEventListener('DOMContentLoaded', function() {
     const allIframes = document.querySelectorAll('.video_slider_item iframe');
     allIframes.forEach(iframe => {
-      // Говорим мобильному браузеру: "не трогай это, пока не увидишь"
       iframe.setAttribute('loading', 'lazy');
-      
       if (iframe.src) {
         iframe.removeAttribute('src'); 
       }
     });
   });
 
-  // Переменная-флаг для отслеживания загрузки скрипта Kinescope
+  // Флаг загрузки скрипта
   let kinescopeApiLoaded = false;
-
-  // Функция, которая динамически скачивает библиотеку Kinescope только по необходимости
   function loadKinescopeScript(callback) {
     if (kinescopeApiLoaded) {
       if (callback) callback();
       return;
     }
-    
     const script = document.createElement('script');
     script.src = 'https://player.kinescope.io/latest/iframe.player.js';
     script.async = true;
@@ -147,22 +142,59 @@
     document.body.appendChild(script);
   }
 
-  // 2. Логика по клику
+  // Обсервер для паузы при свайпе или скролле
+  const slideObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) {
+        const slide = entry.target;
+        const iframe = slide.querySelector('iframe');
+        const playBtn = slide.querySelector('.btn-play');
+        
+        if (playBtn) {
+          playBtn.classList.remove('hidden');
+        }
+
+        if (iframe && iframe.kPlayer) {
+          iframe.kPlayer.pause().catch(() => {});
+        }
+      }
+    });
+  }, { threshold: 0.1 });
+
+
+  // 2. ЕДИНЫЙ ОБРАБОТЧИК КЛИКОВ (для запуска и для паузы)
   document.addEventListener('click', function(e) {
-    const playBtn = e.target.closest('.btn-play');
-    if (!playBtn) return; 
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const slide = playBtn.closest('.video_slider_item');
+    // Находим слайд, по которому кликнули
+    const slide = e.target.closest('.video_slider_item');
     if (!slide) return;
 
     const iframe = slide.querySelector('iframe');
-    if (!iframe) return;
+    const playBtn = slide.querySelector('.btn-play');
+    if (!iframe || !playBtn) return;
 
-    // Прячем кнопку, можно тут добавить класс с лоадером-крутилкой
+    // --- ЛОГИКА ПАУЗЫ ПО КЛИКУ НА ВИДЕО ---
+    // Если клик был НЕ по кнопке Play, проверяем: играет ли видео сейчас?
+    const isClickOnBtn = e.target.closest('.btn-play');
+    
+    if (!isClickOnBtn) {
+      // Если кнопка скрыта (значит видео играет) и у iframe есть плеер
+      if (playBtn.classList.contains('hidden') && iframe.kPlayer) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Ставим на паузу и возвращаем кнопку
+        iframe.kPlayer.pause().catch(() => {});
+        playBtn.classList.remove('hidden');
+      }
+      return; // Завершаем функцию, так как это была команда паузы
+    }
+
+    // --- ЛОГИКА ЗАПУСКА (если клик был именно по кнопке .btn-play) ---
+    e.preventDefault();
+    e.stopPropagation();
+
     playBtn.classList.add('hidden'); 
+    slideObserver.observe(slide);
 
     const videoId = iframe.getAttribute('data-video-id');
     const videoUrl = 'https://kinescope.io/embed/' + videoId;
@@ -171,9 +203,7 @@
       iframe.id = 'kinescope-player-' + Math.random().toString(36).substr(2, 9);
     }
 
-    // Загружаем скрипт Kinescope ТОЛЬКО после первого клика пользователя по кнопке
     loadKinescopeScript(function() {
-      
       if (window.Kinescope && window.Kinescope.IframePlayer) {
         
         if (iframe.kPlayer) {
@@ -188,9 +218,7 @@
           iframe.kPlayer = player;
           
           player.play().catch(function(err) {
-            console.error('Автоплей заблокирован мобильным браузером:', err);
-            // На iOS автоплей может быть заблокирован политикой Apple.
-            // В этом случае возвращаем кнопку, чтобы пользователь нажал еще раз.
+            console.error('Автоплей заблокирован:', err);
             playBtn.classList.remove('hidden'); 
           });
 
@@ -205,5 +233,3 @@
     });
   });
 </script>
-
-
