@@ -1,0 +1,71 @@
+Темная заставка на время 
+
+<style>
+.preloader {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0D0D0D;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.preloader.hidden {
+    display: none !important;
+}
+</style>
+
+<div class="preloader"></div>
+
+
+<script>
+// Определение по ширине + ориентации
+function getDeviceType() {
+    var width = window.innerWidth;
+    
+    if (width >= 992) {
+        return 'desktop'; // ПК 992px+
+    } else if (width >= 768 && width <= 991) {
+        return 'tablet'; // Планшет 768-991px
+    } else {
+        return 'mobile'; // Мобильные до 767px
+    }
+}
+
+// Настройки для разных устройств
+var TIMEOUT_SETTINGS = {
+    desktop: 200,   // ПК: 200мс
+    tablet: 350,    // Планшет: 350мс
+    mobile: 450     // Мобильные: 450мс
+};
+
+// Получаем текущий тип устройства
+var deviceType = getDeviceType();
+var fallbackTime = TIMEOUT_SETTINGS[deviceType] || TIMEOUT_SETTINGS.desktop;
+
+console.log('Устройство:', deviceType, 
+            'Ширина:', window.innerWidth + 'px',
+            'Таймаут:', fallbackTime + 'мс');
+
+// Функция скрытия
+function hidePreloader() {
+    var preloader = document.querySelector('.preloader');
+    if (preloader && !preloader.classList.contains('hidden')) {
+        preloader.style.opacity = '0';
+        setTimeout(function() {
+            preloader.classList.add('hidden');
+        }, 100);
+    }
+}
+
+// Просто запускаем таймер с момента начала чтения скрипта. 
+// Прелоадер скроется ровно через fallbackTime.
+// Строку window.addEventListener('load'...) нужно удалить.
+setTimeout(hidePreloader, fallbackTime);
+
+</script>
