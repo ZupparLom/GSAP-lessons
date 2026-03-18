@@ -1,91 +1,220 @@
-<!-- Подключение dotLottie Player -->
-<script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
-
-<!-- Proloader -->
+<!-- Через dotLottie Player -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const container = document.querySelector('.spheres');
+document.addEventListener('DOMContentLoaded', function() {
+  // Блок-триггер
+  const triggerBlock = document.querySelector('.we-do');
+  if (!triggerBlock) return;
+
+  // Плавность
+  const smoothFactor = 0.12;
+  let targetFrame = 0;
+  let currentFrame = 0;
+  let lastRenderedFrame = -1;
+  let rafId = null;
+
+  let animation = null;
+  let container = null;
+  let scrollListener = null;
+  let resizeObserver = null;
+  let visibilityObserver = null;
+  let blockGeometry = null;
+  let isVisible = false;
+
+  // Обновлены пути для файлов .lottie
+  const config = {
+    desktop: { selector: '.lotti-about', start: -0.95, end: 0.5, path: '/f/2-1.lottie' },
+    mobile: { selector: '.lotti-about', start: -0.1, end: 0.3, path: '/f/2-1.lottie' }
+  };
+
+  // Простая предзагрузка файла для сохранения в кеше браузера
+  async function preloadLottie(url) {
+    try {
+      await fetch(url);
+    } catch (error) {
+      console.error('Ошибка предзагрузки Lottie:', error);
+    }
+  }
+
+  function destroy() {
+    if (animation) {
+      animation.destroy();
+      animation = null;
+    }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (scrollListener) {
+      window.removeEventListener('scroll', scrollListener, { passive: true });
+      scrollListener = null;
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    if (visibilityObserver) {
+      visibilityObserver.disconnect();
+      visibilityObserver = null;
+    }
+  }
+
+  function calculateBlockGeometry() {
+    if (!triggerBlock) return null;
+    const rect = triggerBlock.getBoundingClientRect();
+    const scrollY = window.scrollY || window.pageYOffset;
+    return {
+      top: rect.top + scrollY, 
+      height: rect.height,
+      windowHeight: window.innerHeight
+    };
+  }
+
+  async function init() {
+    destroy();
+
+    const isMobile = window.innerWidth < 480;
+    const conf = isMobile ? config.mobile : config.desktop;
+
+    container = document.querySelector(conf.selector);
     if (!container) return;
 
-    container.innerHTML = '';
+    // Динамический импорт плеера dotLottie без изменения тега script
+    const { DotLottie } = await import('https://esm.sh/@lottiefiles/dotlottie-web');
 
-    const player = document.createElement('dotlottie-player');
-    player.setAttribute('src', '/f/preloader.lottie');
-    player.setAttribute('background', 'transparent');
-    player.setAttribute('loop', 'false');
-    player.style.width = '100%';
-    player.style.height = '100%';
+    const existingLottie = container.querySelectorAll('svg, canvas');
+    existingLottie.forEach(el => el.remove());
 
-    setTimeout(() => {
-      container.appendChild(player);
+    const staticImg = container.querySelector('img');
 
-      player.addEventListener('ready', () => {
-        player.play();
-      });
+    // Создание холста с учетом заданных стилей в Taptop
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    container.appendChild(canvas);
 
-      player.addEventListener('complete', () => {
-        container.remove();
-        console.log('done');
-      });
-    }, 100);
-  });
-</script>
+    // Инициализация DotLottie
+    animation = new DotLottie({
+      canvas: canvas,
+      src: conf.path,
+      loop: false,
+      autoplay: false,
+      renderConfig: {
+        clearCanvas: true
+      }
+    });
 
+    blockGeometry = calculateBlockGeometry();
 
-Проигрывание по скроллу с GSAP ScrollTrigger
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    resizeObserver = new ResizeObserver(() => {
+      blockGeometry = calculateBlockGeometry();
+    });
+    resizeObserver.observe(triggerBlock);
 
-<!-- Подключение dotLottie Player -->
-<script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const container = document.querySelector('.cycle_transf');
-  const triggerBlock = document.querySelector('.cycle_scroll');
-
-  if (!container || !triggerBlock) return;
-
-  container.innerHTML = '';
-
-  const player = document.createElement('dotlottie-player');
-  player.setAttribute('src', '/f/sphere.lottie');
-  player.setAttribute('background', 'transparent');
-  player.setAttribute('loop', 'false');
-  player.setAttribute('autoplay', 'false');
-  player.style.width = '100%';
-  player.style.height = '100%';
-
-  container.appendChild(player);
-
-  let totalFrames = 0;
-  let animationLoaded = false;
-
-  player.addEventListener('ready', () => {
-    player.pause();
-  });
-
-  player.addEventListener('frame', (e) => {
-    if (!animationLoaded) {
-      totalFrames = e.detail.totalFrames || 100;
-      animationLoaded = true;
-
-      // === Запускаем ScrollTrigger ===
-      gsap.registerPlugin(ScrollTrigger);
-
-      ScrollTrigger.create({
-        trigger: triggerBlock,
-        start: 'top 80%',         // когда верх блока попадает в 80% экрана
-        end: 'bottom 20%',        // когда низ блока достигает 20% экрана
-        scrub: true,              // привязка к прокрутке
-        onUpdate: (self) => {
-          const progress = self.progress; // от 0 до 1
-          const frame = progress * totalFrames;
-          player.seek(frame);
+    visibilityObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        isVisible = entry.isIntersecting;
+        if (isVisible) {
+          if (!rafId && animation && animation.totalFrames > 0) {
+            onScroll();
+            smoothLoop();
+          }
+        } else {
+          if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
         }
       });
+    }, {
+      rootMargin: '500px 0px 500px 0px',
+      threshold: 0
+    });
+    visibilityObserver.observe(triggerBlock);
+
+    function onScroll() {
+      if (!blockGeometry || !isVisible) return;
+      
+      const scrollY = window.scrollY || window.pageYOffset;
+      const scrolled = blockGeometry.windowHeight - (blockGeometry.top - scrollY);
+      const totalScroll = blockGeometry.windowHeight + blockGeometry.height;
+      let progress = scrolled / totalScroll;
+      
+      const start = conf.start, end = conf.end;
+      let relativeProgress = Math.max(0, Math.min(1, (progress - start) / (end - start)));
+      
+      if (animation && animation.totalFrames > 0) {
+        targetFrame = relativeProgress * (animation.totalFrames - 1);
+      }
+    }
+
+    scrollListener = onScroll;
+    window.addEventListener('scroll', scrollListener, { passive: true });
+
+    // Обработка успешной загрузки .lottie
+    animation.addEventListener('load', () => {
+      if (staticImg) {
+        staticImg.style.opacity = '0';
+        staticImg.style.pointerEvents = 'none';
+      }
+      container.style.backgroundImage = 'none';
+
+      currentFrame = targetFrame;
+      lastRenderedFrame = Math.round(currentFrame);
+      animation.setFrame(lastRenderedFrame);
+    });
+  }
+
+  function smoothLoop() {
+    if (!animation || animation.totalFrames <= 0 || !isVisible) {
+      rafId = null;
+      return;
+    }
+
+    const diff = targetFrame - currentFrame;
+    if (Math.abs(diff) > 0.05) {
+      currentFrame += diff * smoothFactor;
+      const frameToRender = Math.round(currentFrame);
+      
+      if (frameToRender !== lastRenderedFrame) {
+        animation.setFrame(frameToRender);
+        lastRenderedFrame = frameToRender;
+      }
+    }
+
+    rafId = requestAnimationFrame(smoothLoop);
+  }
+
+  const isMobile = window.innerWidth < 480;
+  const initialPath = isMobile ? config.mobile.path : config.desktop.path;
+  
+  preloadLottie(initialPath).then(() => {
+    const otherPath = isMobile ? config.desktop.path : config.mobile.path;
+    if (config.desktop.path !== config.mobile.path) {
+      preloadLottie(otherPath);
+    }
+
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      window.addEventListener('load', init);
     }
   });
+
+  let currentWindowWidth = window.innerWidth;
+  let resizeTimeout;
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === currentWindowWidth) {
+      return; 
+    }
+    currentWindowWidth = window.innerWidth;
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(init, 200);
+  });
+
+  window.addEventListener('beforeunload', destroy);
 });
 </script>
+
 
