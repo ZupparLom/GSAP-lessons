@@ -91,3 +91,59 @@
     processElements();
   });
 </script>
+
+
+Улучшенный вариант с переносом предлогов даже если они идут друг за другом 
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Список предлогов, союзов и частиц
+    const prepositions = ["в", "без", "до", "из", "к", "на", "по", "о", "от", "перед", "при", "через", "с", "у", "за", "над", "об", "под", "про", "и", "а", "но", "да", "или", "либо", "то", "ни", "не", "же", "как"];
+
+    // Формируем регулярное выражение.
+    // (^|[\\s\\u00A0]) — проверяем начало строки, обычный или неразрывный пробел перед словом.
+    // (?=\\s) — позитивная опережающая проверка: требует пробел после слова, но не захватывает его.
+    // Это позволяет корректно обрабатывать 2, 3 и более предлогов, идущих подряд.
+    const regex = new RegExp(`(^|[\\s\\u00A0])(${prepositions.join("|")})(?=\\s)`, "gi");
+
+    // Функция для обработки отдельного текстового узла
+    function processTextNode(node) {
+      // Пропускаем пустые узлы для оптимизации
+      if (node.nodeValue.trim() !== "") {
+        // Заменяем пробел после предлога на символ неразрывного пробела (Unicode \u00A0)
+        // В текстовых узлах используется \u00A0 вместо &nbsp;
+        node.nodeValue = node.nodeValue.replace(regex, "$1$2\u00A0");
+      }
+    }
+
+    // Функция для безопасного обхода текста внутри элементов
+    function processElements() {
+      const elements = document.querySelectorAll(".no-break-prepositions");
+
+      elements.forEach(function(element) {
+        // TreeWalker позволяет пройтись только по тексту, игнорируя HTML-теги, классы и атрибуты.
+        // Это гарантирует, что верстка из Taptop не сломается.
+        const walker = document.createTreeWalker(
+          element,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
+
+        let node;
+        const nodesToProcess = [];
+
+        // Сначала собираем все текстовые узлы в массив
+        while ((node = walker.nextNode())) {
+          nodesToProcess.push(node);
+        }
+
+        // Затем обрабатываем их. 
+        // Если делать это прямо в цикле while, TreeWalker может сбиться в старых версиях Safari.
+        nodesToProcess.forEach(processTextNode);
+      });
+    }
+
+    // Запускаем обработку
+    processElements();
+  });
+</script>
