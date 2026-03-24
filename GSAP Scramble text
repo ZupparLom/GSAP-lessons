@@ -24,11 +24,11 @@
       const original = chars.map(ch => ch.textContent);
 
       // Параметры анимации (hover)
-      const baseDelay     = 0.05;
-      const delayStep     = 0.05;
-      const duration      = 0.4;
-      const scrambleChars = '0123456789';
-      const revealDelay   = 0.4;
+      const baseDelay     = 0.05; // Начальная задержка перед стартом анимации для самого первого символа
+      const delayStep     = 0.05; // Дополнительное время, которое прибавляется к задержке каждого следующего символа
+      const duration      = 0.4; // Общая длительность анимации (перебора символов) для каждого отдельного символа
+      const scrambleChars = '0123456789'; // Символы под замену. Можно заменить на любые другие символы, например '!@#$%^&*' или буквы алфавита
+      const revealDelay   = 0.4; // Время, в течение которого плагин будет показывать только хаотичные символы
 
       function animateHover() {
         gsap.killTweensOf(chars);
