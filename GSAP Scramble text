@@ -1,24 +1,24 @@
-при наведении на любой .menu-link, '.btn-white', '.menu-open_link', '.btn-black' анимация будет запускаться на его внутреннем элементе .scramble. С ограничением на рахрешение ниже 992
-<!-- GSAP + ScrambleTextPlugin -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js   "></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrambleTextPlugin.min.js   "></script>
+При наведении на любой элементы .scramble-hover или '.scramble-btn' (количество элементов можно увеличить) анимация будет запускаться на его внутреннем элементе .scramble. 
+Работает только на пк версии (мин. ширина экрана 992рх).
 
+<!-- Подключить GSAP + ScrambleTextPlugin -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrambleTextPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/SplitText.min.js"></script>
 
 
 <script>
   // РЕГИСТРАЦИЯ ПЛАГИНОВ
-  gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText);
+  gsap.registerPlugin(ScrambleTextPlugin, SplitText);
 
-  // ============================================
-  // 1) HOVER SCRAMBLE-TEXT ANIMATION (ПК > 991px)
-  // ============================================
+  // HOVER SCRAMBLE-TEXT ANIMATION (ПК > 991px)
   document.fonts.ready.then(() => {
-    const parentSelectors = ['.menu-link', '.btn-white', '.menu-open_link', '.btn-black', '.cover-link'];
+    const parentSelectors = ['.scramble-hover', '.scramble-btn'];
     const isDesktop = window.innerWidth > 991;
     const isMotionEnabled = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
     if (!isDesktop || !isMotionEnabled) return;
 
-    document.querySelectorAll('.scramble-hover').forEach(el => {
+    document.querySelectorAll('.scramble').forEach(el => {
       const split = new SplitText(el, { type: 'chars, words' });
       const chars = split.chars;
       const original = chars.map(ch => ch.textContent);
@@ -45,7 +45,7 @@
               scrambleText: { text: original[i], chars: scrambleChars, revealDelay: revealDelay, tweenLength: false, preserveSpaces: true },
               duration: duration,
               delay: baseDelay + i * delayStep,
-              ease: 'sine.in',
+              ease: 'sine.in', //изинг можно менять
               onComplete: () => ch.textContent = original[i]
             }
           );
