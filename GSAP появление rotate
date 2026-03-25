@@ -1,0 +1,75 @@
+<!--opacity 0-->
+<style>
+  .split_text {
+    opacity: 0;!important
+}
+</style>
+
+<!-- Подключение GSAP -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/SplitText.min.js"></script>
+
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    // Регистрируем плагин
+    gsap.registerPlugin(SplitText);
+
+    // Ищем все блоки-обертки
+    const heads = document.querySelectorAll('.split_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.split_text');
+      if (!target) return;
+
+      // Скрываем блок до начала анимации
+      gsap.set(target, { opacity: 0 });
+      
+      // Задаем видимость и добавляем перспективу для 3D-вращения (важно для rotationX)
+      gsap.set(target, { overflow: 'visible', perspective: 400 });  
+
+      // Создаем наблюдатель
+      const io = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          // Отключаем наблюдатель
+          io.disconnect();
+
+          // Разбиваем текст
+          const split = new SplitText(target, {
+            type: 'lines,words,chars',
+            linesClass: 'split-line',
+            wordsClass: 'split-word',
+            charsClass: 'split-char'
+          });
+
+          // Показываем контейнер
+          gsap.set(target, { opacity: 1 });
+          
+          // Добавляем willChange для Safari/IOS перед началом анимации
+          gsap.set(split.chars, { willChange: 'transform, opacity' });
+          
+          // Анимируем появление новым 3D эффектом
+          gsap.from(split.chars, {
+            duration: 0.8, //длительность
+            opacity: 0,
+            scale: 0,
+            y: '8rem', //движение по y
+            rotationX: 180, //градус переворота
+            transformOrigin: "0% 50% -50",
+            ease: "back.out", // Плавность с небольшим отскоком
+            stagger: 0.01, // Уменьшенная задержка для быстрого перелистывания букв
+            force3D: true, // Аппаратное ускорение
+            onComplete: () => {
+              // Очистка после анимации
+              gsap.set(split.chars, { clearProps: 'willChange' });
+            }
+          });
+        }
+      }, { threshold: 0.5 }); // 50% в видимой зоне
+
+      io.observe(head);
+    });
+  });
+});
+</script>
