@@ -1,0 +1,80 @@
+Текст, при попадании в экран, появляется по буквенно из opacity и плавного движения снизу вверх.  Текст с классом .split_text, находится внутри div split_head
+
+<!--opacity 0-->
+<style>
+  .split_text {
+    opacity: 0;!important
+}
+</style>
+
+<!--Подключить GSAP-->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/SplitText.min.js"></script>
+
+
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    // Регистрируем плагин
+    gsap.registerPlugin(SplitText);
+
+    // Ищем все блоки-обертки
+    const heads = document.querySelectorAll('.split_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.split_text');
+      if (!target) return;
+
+      // Скрываем блок до начала анимации, чтобы избежать мерцания
+      gsap.set(target, { opacity: 0 });
+      
+      // Добавляем overflow hidden или visible 
+      gsap.set(target, { overflow: 'visible' });  
+
+      // Создаем наблюдатель для каждого элемента отдельно
+      const io = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          // Отключаем наблюдатель после первого срабатывания
+          io.disconnect();
+
+          // Разбиваем текст на символы, слова и строки
+          const split = new SplitText(target, {
+            type: 'lines,words,chars',
+            linesClass: 'split-line',
+            wordsClass: 'split-word',
+            charsClass: 'split-char'
+          });
+
+          // Показываем основной контейнер, так как символы сейчас будем анимировать
+          gsap.set(target, { opacity: 1 });
+          
+          // Задаем начальные стили для каждого символа
+          // Используем willChange для оптимизации рендеринга в Safari/iOS
+          gsap.set(split.chars, { 
+            opacity: 0, 
+            y: "4rem", //старт движение по y
+            willChange: 'transform, opacity'
+          });
+          
+          // Анимируем появление
+          gsap.to(split.chars, {
+            opacity: 1,
+            y: 0,
+            duration: 1.25, //длительность
+            ease: 'power3.out',
+            stagger: 0.05, // Задержка 50ms между буквами
+            force3D: true, // Включаем аппаратное ускорение (важно для iOS)
+            onComplete: () => {
+              // Очищаем willChange после завершения, чтобы не расходовать память устройства
+              gsap.set(split.chars, { clearProps: 'willChange' });
+            }
+          });
+        }
+      }, { threshold: 0.5 }); // Срабатывает, когда 50% элемента в видимой зоне
+
+      io.observe(head);
+    });
+  });
+});
+</script>
