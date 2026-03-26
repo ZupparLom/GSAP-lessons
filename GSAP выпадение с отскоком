@@ -1,0 +1,187 @@
+Текст с классом .split_text, находится внутри div split_head
+
+
+<!-- Подключение GSAP и необходимых плагинов -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/CustomBounce.min.js"></script>
+
+Выпадение всего ряда
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    // Регистрируем все плагины
+    gsap.registerPlugin(SplitText, CustomEase, CustomBounce);
+
+    // Создаем кривую отскока один раз для всей страницы
+    CustomBounce.create("myBounce", {
+      strength: 0.6, // Сила отскока
+      squash: 3.5, // Степень сплющивания при ударе
+      squashID: "myBounce-ease" // ID для привязки деформации
+    });
+
+    // Ищем все блоки-обертки
+    const heads = document.querySelectorAll('.split_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.split_text');
+      if (!target) return;
+
+      // Скрываем блок до начала анимации
+      gsap.set(target, { opacity: 0 });
+      gsap.set(target, { overflow: 'visible' });  
+
+      // Создаем наблюдатель
+      const io = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          io.disconnect();
+
+          // Разбиваем текст
+          const split = new SplitText(target, {
+            type: 'lines,words,chars',
+            linesClass: 'split-line',
+            wordsClass: 'split-word',
+            charsClass: 'split-char'
+          });
+
+          // Показываем контейнер
+          gsap.set(target, { opacity: 1 });
+          
+          // Подготавливаем стили для Safari/iOS
+          gsap.set(split.chars, { willChange: 'transform, opacity' });
+          
+          // Создаем таймлайн для текущего заголовка
+          const timeline = gsap.timeline({
+            defaults: {
+              duration: 1.5,
+              stagger: { amount: 0.1 } // Вся цепочка задержек укладывается всего в 0.1 сек 
+            },
+            onComplete: () => {
+              // Очистка willChange после окончания всей цепочки анимаций
+              gsap.set(split.chars, { clearProps: 'willChange' });
+            }
+          });
+
+          // Собираем анимацию падения и сплющивания (все начинаются в позицию "0" одновременно)
+          timeline
+            .from(split.chars, {
+              duration: 0.6,
+              opacity: 0,
+              ease: "power1.inOut"    
+            }, 0)
+            .from(split.chars, {
+              y: -200, // Высота, с которой падают буквы
+              ease: "myBounce", // Применяем физику отскока
+              force3D: true
+            }, 0)
+            .to(split.chars, {
+              scaleX: 1.35, // Растягивание по ширине при ударе
+              scaleY: 0.45, // Сплющивание по высоте при ударе
+              rotation: () => 20 - 30 * Math.random(), // Случайный наклон при ударе
+              ease: "myBounce-ease", // Привязка фаз сплющивания к ударам об пол
+              transformOrigin: "50% 100%", // Точка трансформации в самом низу (пол)
+              force3D: true
+            }, 0);
+
+        }
+      }, { threshold: 0.5 }); // 50% в видимой зоне
+
+      io.observe(head);
+    });
+  });
+});
+</script>
+
+Выпадение по словам 
+<script>
+window.addEventListener('load', () => {
+  document.fonts.ready.then(() => {
+    // Регистрируем все плагины
+    gsap.registerPlugin(SplitText, CustomEase, CustomBounce);
+
+    // Создаем кривую отскока один раз для всей страницы
+    CustomBounce.create("myBounce", {
+      strength: 0.6, // Сила отскока
+      squash: 3.5, // Степень сплющивания при ударе
+      squashID: "myBounce-ease" // ID для привязки деформации
+    });
+
+    // Ищем все блоки-обертки
+    const heads = document.querySelectorAll('.split_head');
+
+    heads.forEach(head => {
+      const target = head.querySelector('.split_text');
+      if (!target) return;
+
+      // Скрываем блок до начала анимации
+      gsap.set(target, { opacity: 0 });
+      gsap.set(target, { overflow: 'visible' });  
+
+      // Создаем наблюдатель
+      const io = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          io.disconnect();
+
+          // Разбиваем текст
+          const split = new SplitText(target, {
+            type: 'lines,words,chars',
+            linesClass: 'split-line',
+            wordsClass: 'split-word',
+            charsClass: 'split-char'
+          });
+
+          // Показываем контейнер
+          gsap.set(target, { opacity: 1 });
+          
+          // Подготавливаем стили для Safari/iOS (ТЕПЕРЬ ДЛЯ СЛОВ)
+          gsap.set(split.words, { 
+            willChange: 'transform, opacity',
+            display: 'inline-block' // Важно для корректной трансформации целых слов
+          });
+          
+          // Создаем таймлайн для текущего заголовка
+          const timeline = gsap.timeline({
+            defaults: {
+              duration: 1.5,
+              stagger: 0.08  // Задержека между словами 0.08 сек 
+            },
+            onComplete: () => {
+              // Очистка willChange после окончания
+              gsap.set(split.words, { clearProps: 'willChange' });
+            }
+          });
+
+          // Анимация падения и сплющивания (ТЕПЕРЬ ДЛЯ split.words)
+          timeline
+            .from(split.words, {
+              duration: 0.6,
+              opacity: 0,
+              ease: "power1.inOut"    
+            }, 0)
+            .from(split.words, {
+              y: -200, // Высота, с которой падают слова
+              ease: "myBounce", // Применяем физику отскока
+              force3D: true
+            }, 0)
+            .to(split.words, {
+              scaleX: 1.15, // Слегка уменьшил растягивание для слов, чтобы они не слипались
+              scaleY: 0.45, // Сплющивание по высоте при ударе
+              rotation: () => 10 - 20 * Math.random(), // Уменьшил градус наклона для слов, чтобы читалось лучше
+              ease: "myBounce-ease", // Привязка фаз сплющивания к ударам об пол
+              transformOrigin: "50% 100%", // Точка трансформации в самом низу (пол)
+              force3D: true
+            }, 0);
+
+        }
+      }, { threshold: 0.5 }); // 50% в видимой зоне
+
+      io.observe(head);
+    });
+  });
+});
+</script>
+
+
