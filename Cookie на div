@@ -1,97 +1,128 @@
 
 Установка напоминания куки через обычный див с анимацияе появления
 
+<!-- Cookie -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  //  Вспомогательные функции для работы с cookie
+  // ==========================================
+  // НАСТРОЙКИ СКРИПТА
+  // ==========================================
+  const CONFIG = {
+    // Настройки Cookie
+    cookieName: "cookieAgreement", // Имя создаваемого cookie
+    cookieExpireDays: 7,           // Срок жизни cookie в днях
+    cookiePath: "/",               // Путь для cookie (работает на всех страницах)
+    
+    // Селекторы элементов интерфейса
+    bannerSelector: ".modal-cook",    // Класс модального окна/баннера
+    contentSelector: ".cook-content", // Класс контента для анимации
+    btnConsentSelector: ".btn-cook",  // Кнопка принятия
+    btnRejectSelector: ".btn-no-cook",// Кнопка отказа
+    
+    // Настройки анимации (зависят от изначальных CSS стилей Taptop)
+    animationDelay: "3.6s",           // Задержка перед появлением
+    animationDuration: "0.8s"         // Длительность анимации появления
+  };
+
+  // ==========================================
+  // ФУНКЦИИ РАБОТЫ С COOKIE (Адаптировано для Safari/iOS)
+  // ==========================================
   const cookies = {
     get: (name) => {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? decodeURIComponent(match[2]) : undefined;
+      // Более надежное регулярное выражение для поиска конкретного cookie
+      const matches = document.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+      ));
+      return matches ? decodeURIComponent(matches[1]) : undefined;
     },
-    set: (name, value, options = {}) => {
-      options = {
-        path: '/',
-        ...options
-      };
-
-      if (options.expires) {
+    set: (name, value, days) => {
+      let expires = "";
+      let maxAge = "";
+      
+      if (days) {
         const date = new Date();
-        date.setTime(date.getTime() + options.expires * 24 * 60 * 60 * 1000); // 🕒 expires = дни → миллисекунды
-        options.expires = date.toUTCString();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+        // Safari на iOS лучше воспринимает max-age для установки срока жизни
+        maxAge = "; max-age=" + (days * 24 * 60 * 60); 
       }
-
-      let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-
-      for (const [key, val] of Object.entries(options)) {
-        updatedCookie += '; ' + key;
-        if (val !== true) {
-          updatedCookie += '=' + val;
-        }
-      }
-
-      document.cookie = updatedCookie;
+      
+      // Добавлен SameSite=Lax для предотвращения блокировки браузерами (в т.ч. Safari ITP)
+      document.cookie = name + "=" + encodeURIComponent(value) + expires + maxAge + "; path=" + CONFIG.cookiePath + "; SameSite=Lax";
     }
   };
 
-  // Ссылки на элементы интерфейса
-  const ui = {
-    banner: document.querySelector(".modal-cook"),
-    content: document.querySelector(".cook-content"),
-    consentBtn: document.querySelector(".button-cookie"),
-    rejectBtn: document.querySelector(".button-no-cookie")
-  };
+  // ==========================================
+  // ЛОГИКА РАБОТЫ ИНТЕРФЕЙСА
+  // ==========================================
+  
+  // Получаем элементы DOM
+  const banner = document.querySelector(CONFIG.bannerSelector);
+  const content = document.querySelector(CONFIG.contentSelector);
+  const consentBtn = document.querySelector(CONFIG.btnConsentSelector);
+  const rejectBtn = document.querySelector(CONFIG.btnRejectSelector);
 
-  // Скрыть баннер (по таймеру или нажатию)
+  // Если баннер отсутствует на странице, прерываем скрипт
+  if (!banner) return;
+
+  // Скрытие баннера
   const hideBanner = () => {
-    if (ui.banner) ui.banner.style.display = "none";
+    banner.style.display = "none";
   };
 
-  // Показать баннер с анимацией
+  // Показ баннера с анимацией
   const showBanner = () => {
-    if (ui.banner && ui.content) {
-      ui.banner.style.display = "flex";
-
-      // Начальная анимация (невидимость и движение)
-      ui.content.style.transition = "none";
-      ui.content.style.opacity = "0";
-      ui.content.style.transform = "translateY(4vh)";
-      void ui.content.offsetWidth;
-
-      // Анимация появления (через 1.2s, длится 0.5s, ease)
-      ui.content.style.transition = "opacity 0.5s ease 1.2s, transform 0.5s ease 1.2s";
-      requestAnimationFrame(() => {
-        ui.content.style.opacity = "1";
-        ui.content.style.transform = "translateY(0)";
-      });
+    banner.style.display = "flex";
+    
+    if (content) {
+      // Сброс стилей перед анимацией
+      content.style.transition = "none";
+      content.style.opacity = "0";
+      content.style.transform = "translateY(5vh)";
+      
+      // Принудительный reflow (необходимо для iOS и Safari, чтобы анимация сработала корректно)
+      void content.offsetWidth;
+      
+      // Назначение анимации
+      content.style.transition = `opacity ${CONFIG.animationDuration} ease ${CONFIG.animationDelay}, transform ${CONFIG.animationDuration} ease ${CONFIG.animationDelay}`;
+      
+      // Использование setTimeout вместо requestAnimationFrame стабильнее работает в Safari
+      setTimeout(() => {
+        content.style.opacity = "1";
+        content.style.transform = "translateY(0)";
+      }, 50);
     }
   };
 
-  // Проверка: есть ли уже cookieAgreement?
-  const cookieStatus = cookies.get("cookieAgreement");
+  // ==========================================
+  // ИНИЦИАЛИЗАЦИЯ И ОБРАБОТЧИКИ
+  // ==========================================
+  
+  const cookieStatus = cookies.get(CONFIG.cookieName);
 
   if (cookieStatus === undefined) {
-    // Cookie НЕТ — показываем баннер
     showBanner();
   } else {
-    // Cookie УЖЕ ЕСТЬ — скрываем баннер на весь срок действия cookie
     hideBanner();
   }
 
-  // Согласие на cookies
-  ui.consentBtn?.addEventListener("click", () => {
-    cookies.set("cookieAgreement", "true", { expires: 7 }); // срок действия — 7 дней
-    hideBanner();
-  });
+  // Нажатие на кнопку принятия
+  if (consentBtn) {
+    consentBtn.addEventListener("click", () => {
+      cookies.set(CONFIG.cookieName, "true", CONFIG.cookieExpireDays);
+      hideBanner();
+    });
+  }
 
-  // Отказ от cookies
-  ui.rejectBtn?.addEventListener("click", () => {
-    cookies.set("cookieAgreement", "false", { expires: 7 }); // тоже скрываем на 7 дней
-    hideBanner();
-  });
+  // Нажатие на кнопку отказа
+  if (rejectBtn) {
+    rejectBtn.addEventListener("click", () => {
+      cookies.set(CONFIG.cookieName, "false", CONFIG.cookieExpireDays);
+      hideBanner();
+    });
+  }
 });
 </script>
-
 ==================================================================================================
 С разделением анимации по слаг страниц. В данном случае Главная и med-odezhda (слаг) 
 
