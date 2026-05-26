@@ -1,7 +1,9 @@
+обновление 26.05
+
 <!-- LENIS SMOOTH SCROLL -->
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.17/dist/lenis.min.js"></script>
 
-<!-- Обязательные стили для Safari --> 
+<!-- Обязательные стили для Safari и внутреннего скролла --> 
 <style> 
   /* Базовые стили Lenis */ 
   html.lenis { 
@@ -11,6 +13,12 @@
   .lenis.lenis-smooth { 
     scroll-behavior: auto; 
   } 
+
+  /* Настройки для внутреннего скролла попапа (исправление для Safari/iOS) */
+  .popup-order__content {
+    overscroll-behavior: contain; 
+    -webkit-overflow-scrolling: touch; 
+  }
  
   /* Стили только для десктопа (шире 992px) */ 
   @media (min-width: 993px) { 
@@ -42,13 +50,33 @@
  
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // --- Настройки скрипта Lenis ---
+    const CONFIG = {
+      // Класс контейнера, внутри которого нужно разрешить нативный скролл
+      popupScrollClass: '.popup-order__content', 
+      // Атрибут для отключения перехвата скролла скриптом Lenis
+      preventAttr: 'data-lenis-prevent', 
+      // Ширина экрана, начиная с которой работает плавный скролл
+      breakpoint: 992, 
+      // Настройки самого Lenis
+      lerp: 0.086, 
+      wheelMultiplier: 1 
+    };
+
+    // Находим все элементы с внутренним скроллом и добавляем им атрибут
+    // Это позволит крутить колесо мыши внутри попапа без блокировки от Lenis
+    const scrollableElements = document.querySelectorAll(CONFIG.popupScrollClass);
+    scrollableElements.forEach(function(el) {
+      el.setAttribute(CONFIG.preventAttr, 'true');
+    });
+
     let lenis;
     let isScrollLocked = false;
     
     function initLenis() {
       return new Lenis({
-        lerp: 0.086,
-        wheelMultiplier: 1,
+        lerp: CONFIG.lerp,
+        wheelMultiplier: CONFIG.wheelMultiplier,
         gestureOrientation: "vertical",
         normalizeWheel: false,
         smoothTouch: false,
@@ -58,14 +86,12 @@
     function checkViewportAndInit() {
       const viewportWidth = window.innerWidth;
       
-      if (viewportWidth >= 992) {
-        // Если Lenis еще не инициализирован и ширина экрана >= 992px
+      if (viewportWidth >= CONFIG.breakpoint) {
         if (!lenis) {
           lenis = initLenis();
-          window.lenis = lenis; // Делаем Lenis доступным для нашего скрипта навигации
+          window.lenis = lenis; 
         }
       } else {
-        // Если ширина экрана < 992px и Lenis активен - уничтожаем
         if (lenis) {
           lenis.destroy();
           lenis = null;
@@ -73,32 +99,28 @@
       }
     }
     
-    // Проверяем при загрузке
     checkViewportAndInit();
     
-    // Слушаем изменение размера окна
     window.addEventListener('resize', function() {
       checkViewportAndInit();
     });
     
     function raf(time) {
-      const viewportWidth = window.innerWidth;
       const nowLocked = 
         document.documentElement.classList.contains("is-overflow-hidden") || 
         document.body.classList.contains("is-overflow-hidden");
 
-      // Обновляем состояние блокировки только если Lenis активен
       if (lenis) {
-        if (nowLocked !== isScrollLocked && lenis) {
-  if (nowLocked) {
-    lenis.stop(); // просто останавливаем
-  } else {
-    lenis.start(); // продолжаем
-  }
-  isScrollLocked = nowLocked;
-}
+        if (nowLocked !== isScrollLocked) {
+          if (nowLocked) {
+            lenis.stop(); 
+          } else {
+            lenis.start(); 
+          }
+          isScrollLocked = nowLocked;
+        }
 
-        if (!isScrollLocked && lenis) {
+        if (!isScrollLocked) {
           lenis.raf(time);
         }
       }
@@ -108,8 +130,7 @@
     
     requestAnimationFrame(raf);
 
-    // Очистка при размонтировании
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', function() {
       if (lenis) {
         lenis.destroy();
       }
