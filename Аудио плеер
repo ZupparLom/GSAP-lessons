@@ -1,0 +1,224 @@
+Простой аудио плеер со шкалой и перемоткой по ней, а так же с временем трека
+
+<script>
+// ==========================================
+// НАСТРОЙКИ ПЛЕЕРА
+// ==========================================
+const PLAYER_CONFIG = {
+    // Источник аудиофайла 
+    audioSource: '/f/simple.mp3', 
+    
+    // Классы элементов из структуры Taptop для привязки логики
+    selectors: {
+        playerBlock: '.header__head-player',             // Главный контейнер плеера
+        playBtn: '.head-player__btn',                    // Кнопка переключения play/stop
+        playIcon: '.play-icon',                          // Иконка play
+        stopIcon: '.stop-icon',                          // Иконка stop
+        trackContainer: '.main-treck__bar',              // Контейнер полосы для клика/перемотки
+        progressBar: '.main-treck__bar-inside',          // Заполняющаяся часть шкалы прогресса
+        timeText: '.main-treck__time'                    // Текстовый блок со временем
+    },
+    
+    // Настройки стилей для состояний
+    styles: {
+        iconVisible: '1',                                // Значение opacity для видимой иконки
+        iconHidden: '0',                                 // Значение opacity для скрытой иконки
+        hitAreaExtend: '5px'                             // Увеличение зоны клика шкалы сверху и снизу (рекомендуется 5-10px для iOS)
+    }
+};
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    class TaptopAudioPlayer {
+        constructor(config) {
+            this.config = config;
+            
+            // Находим все нужные элементы в DOM
+            this.playerBlock = document.querySelector(this.config.selectors.playerBlock);
+            if (!this.playerBlock) return;
+            
+            this.playBtn = this.playerBlock.querySelector(this.config.selectors.playBtn);
+            this.playIcon = this.playerBlock.querySelector(this.config.selectors.playIcon);
+            this.stopIcon = this.playerBlock.querySelector(this.config.selectors.stopIcon);
+            this.trackContainer = this.playerBlock.querySelector(this.config.selectors.trackContainer);
+            this.progressBar = this.playerBlock.querySelector(this.config.selectors.progressBar);
+            this.timeText = this.playerBlock.querySelector(this.config.selectors.timeText);
+            
+            this.isPlaying = false;
+            
+            this.initAudio();
+            this.setInitialVisuals();
+            this.enhanceTrackHitbox();
+            this.setupListeners();
+        }
+        
+        // Создание элемента аудио и добавление его в структуру
+        initAudio() {
+            this.audio = document.createElement('audio');
+            this.audio.src = this.config.audioSource;
+            this.audio.preload = 'metadata'; // Помогает iOS быстрее получить длительность
+            this.playerBlock.appendChild(this.audio);
+        }
+        
+        // Установка начальных состояний для элементов верстки
+        setInitialVisuals() {
+            if (this.playIcon) {
+                this.playIcon.style.opacity = this.config.styles.iconVisible;
+                this.playIcon.style.transition = 'opacity 0.3s ease';
+            }
+            if (this.stopIcon) {
+                this.stopIcon.style.opacity = this.config.styles.iconHidden;
+                this.stopIcon.style.transition = 'opacity 0.3s ease';
+            }
+            if (this.progressBar) {
+                this.progressBar.style.width = '0%';
+            }
+            if (this.timeText) {
+                this.timeText.textContent = '00:00';
+            }
+        }
+
+        // Динамическое добавление стилей для увеличения зоны клика
+        enhanceTrackHitbox() {
+            if (!this.trackContainer) return;
+            
+            // Добавляем стили через JS, чтобы не менять настройки верстки в Taptop
+            const styleId = 'taptop-player-hitbox-styles';
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                    ${this.config.selectors.trackContainer} {
+                        position: relative;
+                        cursor: pointer;
+                    }
+                    ${this.config.selectors.trackContainer}::after {
+                        content: '';
+                        position: absolute;
+                        top: -${this.config.styles.hitAreaExtend};
+                        bottom: -${this.config.styles.hitAreaExtend};
+                        left: 0;
+                        right: 0;
+                        z-index: 2;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        
+        // Назначение обработчиков событий
+        setupListeners() {
+            // Клик по кнопке Play/Stop
+            if (this.playBtn) {
+                this.playBtn.addEventListener('click', () => this.togglePlay());
+            }
+            
+            // Клик по прогресс-бару для перемотки трека
+            if (this.trackContainer) {
+                this.trackContainer.addEventListener('click', (e) => this.scrub(e));
+            }
+            
+            // Обновление интерфейса по мере проигрывания
+            this.audio.addEventListener('timeupdate', () => this.updateProgress());
+            
+            // Возврат в начало при завершении трека
+            this.audio.addEventListener('ended', () => this.resetPlayer());
+            
+            // Остановка аудио при переходе на другую вкладку браузера
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && this.isPlaying) {
+                    this.pause();
+                }
+            });
+        }
+        
+        // Логика переключения состояний
+        togglePlay() {
+            if (this.isPlaying) {
+                this.pause();
+            } else {
+                this.play();
+            }
+        }
+        
+        // Запуск с обработкой Promise для Safari/iOS
+        play() {
+            const playPromise = this.audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    this.isPlaying = true;
+                    this.updateVisualState(true);
+                }).catch(err => {
+                    console.debug('Воспроизведение заблокировано браузером:', err);
+                    this.isPlaying = false;
+                    this.updateVisualState(false);
+                });
+            }
+        }
+        
+        // Остановка проигрывания
+        pause() {
+            this.audio.pause();
+            this.isPlaying = false;
+            this.updateVisualState(false);
+        }
+        
+        // Изменение opacity иконок в зависимости от состояния
+        updateVisualState(playing) {
+            if (this.playIcon && this.stopIcon) {
+                this.playIcon.style.opacity = playing ? this.config.styles.iconHidden : this.config.styles.iconVisible;
+                this.stopIcon.style.opacity = playing ? this.config.styles.iconVisible : this.config.styles.iconHidden;
+            }
+        }
+        
+        // Отрисовка полосы загрузки и таймера
+        updateProgress() {
+            if (!this.audio.duration) return;
+            
+            const current = this.audio.currentTime;
+            const duration = this.audio.duration;
+            const percent = (current / duration) * 100;
+            
+            if (this.progressBar) {
+                this.progressBar.style.width = `${percent}%`;
+            }
+            
+            if (this.timeText) {
+                this.timeText.textContent = this.formatTime(current);
+            }
+        }
+        
+        // Перемотка трека по клику на полосу
+        scrub(e) {
+            if (!this.audio.duration) return;
+            
+            const rect = this.trackContainer.getBoundingClientRect();
+            // Высчитываем позицию клика относительно ширины контейнера
+            const clickX = e.clientX - rect.left;
+            const percent = Math.max(0, Math.min(1, clickX / rect.width));
+            
+            this.audio.currentTime = percent * this.audio.duration;
+            this.updateProgress();
+        }
+        
+        // Сброс плеера по завершению
+        resetPlayer() {
+            this.isPlaying = false;
+            this.audio.currentTime = 0;
+            this.updateVisualState(false);
+            this.updateProgress();
+        }
+        
+        // Форматирование секунд в 00:00
+        formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '00:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+    }
+
+    // Инициализация при загрузке документа
+    new TaptopAudioPlayer(PLAYER_CONFIG);
+});
+</script>
