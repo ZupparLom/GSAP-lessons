@@ -5,44 +5,58 @@
 <!--Добавление неразрывного пробела-->
 
 <script>
- document.addEventListener("DOMContentLoaded", function() {
-  // Функция для добавления неразрывных пробелов
-  function replacePrepositions(text) {
-    // Список предлогов, которые нужно обработать
-    const prepositions = ["в", "где", "без", "до", "из", "к", "на", "по", "о", "от", "перед", "при", "через", "с", "у", "за", "над", "об", "под", "про", "и", "а", "но", "да", "или", "либо", "то", "ни", "не", "же", "как"];
+document.addEventListener("DOMContentLoaded", function () {
+    // ==========================================
+    // НАСТРОЙКИ СКРИПТА
+    // ==========================================
+  /* Класс элементов для обработки */
+  const TARGET_SELECTOR = ".no-break";
 
-    // Регулярное выражение:
-    // (?![^<]*>) - защита от замены пробелов внутри HTML-атрибутов тегов
-    // (^|\\s|&nbsp;|>) - перед предлогом может быть начало строки, пробел, неразрывный пробел или конец тега
-    // \\s+ - после предлога идет один или несколько пробелов
-    const regex = new RegExp(`(?![^<]*>)(^|\\s|&nbsp;|>)(${prepositions.join("|")})\\s+`, "gi");
+  /* Список слов, после которых нужен неразрывный пробел */
+  const NBSP_WORDS = [
+    "в", "где", "без", "до", "из", "к", "на", "по", "о", "от",
+    "перед", "при", "через", "с", "у", "за", "над", "об", "под", "про",
+    "и", "а", "но", "да", "или", "либо", "то", "ни", "не", "же", "как"
+  ];
+    // ==========================================
+    
+  /* HTML-сущность неразрывного пробела */
+  const NBSP_ENTITY = "&nbsp;";
 
+  /* Регулярное выражение:
+     (?![^<]*>) - защита от замены внутри HTML-атрибутов
+     (^|\\s|&nbsp;|>) - перед словом начало строки, пробел, неразрывный пробел или конец тега
+     \\s+ - после слова один или несколько пробелов */
+  const REPLACE_REGEXP = new RegExp(
+    `(?![^<]*>)(^|\\s|&nbsp;|>)(${NBSP_WORDS.join("|")})\\s+`,
+    "gi"
+  );
+
+  /* Добавление неразрывных пробелов */
+  function replaceShortWords(text) {
     let currentText = text;
     let previousText = "";
 
-    // Цикл решает проблему предлогов, идущих подряд.
-    // Прогоняем замену до тех пор, пока текст не перестанет меняться.
     while (currentText !== previousText) {
       previousText = currentText;
-      // Заменяем совпадение, сохраняя левую границу ($1) и сам предлог ($2), добавляя неразрывный пробел
-      currentText = currentText.replace(regex, "$1$2&nbsp;");
+      currentText = currentText.replace(
+        REPLACE_REGEXP,
+        `$1$2${NBSP_ENTITY}`
+      );
     }
 
     return currentText;
   }
 
-  // Функция для обработки текста в элементах с определенным классом
+  /* Обработка всех нужных элементов */
   function processElements() {
-    // Выбираем все элементы с классом "no-break"
-    const elements = document.querySelectorAll(".no-break");
+    const elements = document.querySelectorAll(TARGET_SELECTOR);
 
-    elements.forEach(function(element) {
-      // Обрабатываем текст в каждом элементе
-      element.innerHTML = replacePrepositions(element.innerHTML);
+    elements.forEach(function (element) {
+      element.innerHTML = replaceShortWords(element.innerHTML);
     });
   }
 
-  // Запускаем обработку текста
   processElements();
 });
 </script>
